@@ -49,7 +49,7 @@ export const register = async (req: Request, res: Response) => {
         lastName: user.lastName,
         email: user.email,
         businessName: user.businessName,
-        token: generateToken(user.id),
+        token: generateToken(Number(user.id)),
       },
     });
   } catch (error) {
@@ -92,7 +92,7 @@ export const login = async (req: Request, res: Response) => {
         lastName: user.lastName,
         email: user.email,
         businessName: user.businessName,
-        token: generateToken(user.id),
+        token: generateToken(Number(user.id)),
       },
     });
   } catch (error) {

@@ -1,4 +1,3 @@
-// src/entities/order.entity.ts
 import {
     Entity,
     PrimaryGeneratedColumn,
@@ -10,9 +9,9 @@ import {
     OneToOne,
     JoinColumn,
   } from 'typeorm';
-  import { User } from './user.entity';
-  import { OrderItem } from './orderItem.entity';
-  import { Payment } from './payment.entity';
+  import { User } from './User';
+  import { OrderItem } from './Order-Item';
+  import { Payment } from './Payment';
   
   export enum OrderStatus {
     PENDING = 'Pending',
@@ -24,46 +23,46 @@ import {
   @Entity('orders')
   export class Order {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
   
     @Column()
-    orderNumber: string;
+    orderNumber!: string;
   
     @Column({
       type: 'enum',
       enum: OrderStatus,
       default: OrderStatus.PENDING,
     })
-    status: OrderStatus;
+    status!: OrderStatus;
   
     @Column('decimal', { precision: 10, scale: 2 })
-    totalAmount: number;
+    totalAmount!: number;
   
     @Column({ nullable: true })
-    customerName: string;
+    customerName!: string;
   
     @Column({ nullable: true })
-    customerEmail: string;
+    customerEmail!: string;
   
     @ManyToOne(() => User, (user) => user.orders)
     @JoinColumn({ name: 'vendorId' })
-    vendor: User;
+    vendor!: User;
   
     @Column()
-    vendorId: string;
+    vendorId!: string;
   
     @OneToMany(() => OrderItem, (orderItem) => orderItem.order, { cascade: true })
-    items: OrderItem[];
+    items!: OrderItem[];
   
     @OneToOne(() => Payment, (payment) => payment.order)
-    payment: Payment;
+    payment!: Payment;
   
     @Column({ nullable: true })
-    notes: string;
+    notes!: string;
   
     @CreateDateColumn()
-    createdAt: Date;
+    createdAt!: Date;
   
     @UpdateDateColumn()
-    updatedAt: Date;
+    updatedAt!: Date;
   }

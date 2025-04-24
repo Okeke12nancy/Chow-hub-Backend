@@ -7,7 +7,7 @@ import {
     OneToOne,
     JoinColumn,
   } from 'typeorm';
-  import { Order } from './order.entity';
+  import { Order } from './Order';
   
   export enum PaymentStatus {
     PENDING = 'Pending',
@@ -26,39 +26,39 @@ import {
   @Entity('payments')
   export class Payment {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
   
     @Column()
-    transactionId: string;
+    transactionId!: string;
   
     @Column('decimal', { precision: 10, scale: 2 })
-    amount: number;
+    amount!: number;
   
     @Column({
       type: 'enum',
       enum: PaymentMethod,
       default: PaymentMethod.CREDIT_CARD,
     })
-    paymentMethod: PaymentMethod;
+    paymentMethod!: PaymentMethod;
   
     @Column({
       type: 'enum',
       enum: PaymentStatus,
       default: PaymentStatus.PENDING,
     })
-    status: PaymentStatus;
+    status!: PaymentStatus;
   
     @OneToOne(() => Order, (order) => order.payment)
     @JoinColumn({ name: 'orderId' })
-    order: Order;
+    order!: Order;
   
     @Column()
-    orderId: string;
+    orderId!: string;
   
     @CreateDateColumn()
-    createdAt: Date;
+    createdAt!: Date;
   
     @UpdateDateColumn()
-    updatedAt: Date;
+    updatedAt!: Date;
   }
   

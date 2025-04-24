@@ -25,7 +25,7 @@ import {
     @Column({ unique: true })
     email!: string;
   
-    @Column()
+    @Column({nullable:false})
     password!: string;
   
     @Column({ nullable: true })

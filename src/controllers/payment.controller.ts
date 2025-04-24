@@ -1,18 +1,22 @@
 import { Request, Response } from 'express';
-import { getRepository, Between } from 'typeorm';
-import { Payment, PaymentStatus, PaymentMethod } from '../entities/payment.entity';
+import { Between } from 'typeorm';
+import { Payment, PaymentStatus, PaymentMethod } from '../entities/Payment';
 import { Transaction } from '../entities/transaction.entity';
-import { getCurrentMonthRange, getPreviousMonthRange } from '../utils/date.utils';
+import { getCurrentMonthRange, getLast30DaysRange, getLast7DaysRange, getPreviousMonthRange } from '../utils/date.utils';
+import { AppDataSource } from '../data-source';
 
 export const getAllPayments = async (req: Request, res: Response) => {
   try {
-    const { id: userId } = req.user;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
     const { status, period } = req.query;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
     
-    const paymentRepository = getRepository(Payment);
+    const paymentRepository = AppDataSource.getRepository(Payment);
     
     // Build query
     const queryBuilder = paymentRepository
@@ -57,16 +61,19 @@ export const getAllPayments = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to fetch payments',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };
 
 export const getPaymentStatistics = async (req: Request, res: Response) => {
   try {
-    const { id: userId } = req.user;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
     
-    const transactionRepository = getRepository(Transaction);
+    const transactionRepository = AppDataSource.getRepository(Transaction);
     
     // Get current month and previous month ranges
     const { startOfMonth, endOfMonth } = getCurrentMonthRange();
@@ -226,21 +233,22 @@ export const getPaymentStatistics = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to fetch payment statistics',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };
 
 export const getPaymentMethodsDistribution = async (req: Request, res: Response) => {
   try {
-    const { id: userId } = req.user;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
     
-    const transactionRepository = getRepository(Transaction);
+    const transactionRepository = AppDataSource.getRepository(Transaction);
     
-    // Get current month range
     const { startOfMonth, endOfMonth } = getCurrentMonthRange();
     
-    // Get payments by method
     const paymentMethods = Object.values(PaymentMethod);
     const distribution = [];
     
@@ -269,27 +277,27 @@ export const getPaymentMethodsDistribution = async (req: Request, res: Response)
     console.error(error);
     res.status(500).json({
       message: 'Failed to fetch payment methods distribution',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };
 
 export const getRevenueByMonth = async (req: Request, res: Response) => {
   try {
-    const { id: userId } = req.user;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
     
-    const transactionRepository = getRepository(Transaction);
+    const transactionRepository = AppDataSource.getRepository(Transaction);
     
-    // Get data for last 6 months
     const now = new Date();
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(now.getMonth() - 5);
     
-    // Set to start of month
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
     
-    // Get monthly revenue
     const monthlyRevenue = [];
     
     for (let i = 0; i < 6; i++) {
@@ -323,7 +331,7 @@ export const getRevenueByMonth = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to fetch revenue by month',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };

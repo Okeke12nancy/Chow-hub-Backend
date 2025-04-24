@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { getRepository } from 'typeorm';
 import { User } from '../entities/User';
 import config from '../config/app';
+import { AppDataSource } from '../data-source';
 
 interface TokenPayload {
   id: string;
@@ -39,8 +39,8 @@ export const authenticate = async (
 
     const decoded = jwt.verify(token, config.jwtSecret) as TokenPayload;
     
-    const userRepository = getRepository(User);
-    const user = await userRepository.findOne(decoded.id);
+    const userRepository = AppDataSource.getRepository(User);
+    const user = await userRepository.findOne({ where: { id: decoded.id } });
     
     if (!user) {
       return res.status(401).json({ message: 'User not found' });

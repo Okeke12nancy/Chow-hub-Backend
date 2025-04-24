@@ -7,47 +7,47 @@ import {
     ManyToOne,
     JoinColumn,
   } from 'typeorm';
-  import { User } from './user.entity';
-  import { PaymentMethod, PaymentStatus } from './payment.entity';
+  import { User } from './User';
+  import { PaymentMethod, PaymentStatus } from './Payment';
   
   @Entity('transactions')
   export class Transaction {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
   
     @Column()
-    transactionId: string;
+    transactionId!: string;
   
     @Column({ nullable: true })
-    orderNumber: string;
+    orderNumber!: string;
   
     @Column('decimal', { precision: 10, scale: 2 })
-    amount: number;
+    amount!: number;
   
     @Column({
       type: 'enum',
       enum: PaymentMethod,
       default: PaymentMethod.CREDIT_CARD,
     })
-    paymentMethod: PaymentMethod;
+    paymentMethod!: PaymentMethod;
   
     @Column({
       type: 'enum',
       enum: PaymentStatus,
       default: PaymentStatus.PENDING,
     })
-    status: PaymentStatus;
+    status!: PaymentStatus;
   
     @ManyToOne(() => User)
     @JoinColumn({ name: 'vendorId' })
-    vendor: User;
+    vendor!: User;
   
     @Column()
-    vendorId: string;
+    vendorId!: string;
   
     @CreateDateColumn()
-    createdAt: Date;
+    createdAt!: Date;
   
     @UpdateDateColumn()
-    updatedAt: Date;
+    updatedAt!: Date;
   }

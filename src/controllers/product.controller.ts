@@ -1,13 +1,37 @@
 import { Request, Response } from 'express';
-import { getRepository } from 'typeorm';
-import { Product, StockStatus } from '../entities/product.entity';
-import { ProductCategory } from '../entities/productCategory.entity';
-import upload from './middlewares/upload';
+import { Product, StockStatus } from '../entities/Product';
+import { ProductCategory } from '../entities/Product-Category';
+import upload from '../middlewares/upload';
+import { AppDataSource } from '../data-source';
 
 export const getAllProducts = async (req: Request, res: Response) => {
   try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
     const { id: userId } = req.user;
-    const productRepository = getRepository(Product);
+    const productRepository = AppDataSource.getRepository(Product);
     
     const products = await productRepository.find({
       where: { userId },
@@ -20,17 +44,21 @@ export const getAllProducts = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to fetch products',
-      error: error.message
+      error: (error instanceof Error) ? error.message : 'Unknown error'
     });
   }
 };
 
 export const getProductById = async (req: Request, res: Response) => {
   try {
+    const userId = req.user?.id;
     const { id } = req.params;
-    const { id: userId } = req.user;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is missing' });
+    }
     
-    const productRepository = getRepository(Product);
+    
+    const productRepository = AppDataSource.getRepository(Product);
     const product = await productRepository.findOne({
       where: { id, userId },
       relations: ['category']
@@ -45,7 +73,7 @@ export const getProductById = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to fetch product',
-      error: error.message
+      error: (error instanceof Error) ? error.message : 'Unknown error'
     });
   }
 };
@@ -53,22 +81,24 @@ export const getProductById = async (req: Request, res: Response) => {
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
-    const { id: userId } = req.user;
-    const productRepository = getRepository(Product);
+    const userId = req.user?.id;
+    const { id } = req.params;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is missing' });
+    }
+    const productRepository = AppDataSource.getRepository(Product);
 
-    // Check if category exists
-    const categoryRepository = getRepository(ProductCategory);
+    const categoryRepository = AppDataSource.getRepository(ProductCategory);
     const category = await categoryRepository.findOne(req.body.categoryId);
 
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });
     }
 
-    // Create new product
     const product = productRepository.create({
       ...req.body,
       userId,
-      imageUrl: req.file ? req.file.path : null,
+      imageUrl: req.file?.path || null,
     });
 
     await productRepository.save(product);
@@ -78,7 +108,7 @@ export const createProduct = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to create product',
-      error: error.message,
+      error: (error instanceof Error) ? error.message : 'Unknown error',
     });
   }
 };
@@ -87,10 +117,13 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
   try {
+    const userId = req.user?.id;
     const { id } = req.params;
-    const { id: userId } = req.user;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is missing' });
+    }
     
-    const productRepository = getRepository(Product);
+    const productRepository = AppDataSource.getRepository(Product);
     const product = await productRepository.findOne({
       where: { id, userId }
     });
@@ -99,9 +132,8 @@ export const updateProduct = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Product not found' });
     }
     
-    // Check if category exists if it's being updated
     if (req.body.categoryId) {
-      const categoryRepository = getRepository(ProductCategory);
+      const categoryRepository = AppDataSource.getRepository(ProductCategory);
       const category = await categoryRepository.findOne(req.body.categoryId);
       
       if (!category) {
@@ -109,7 +141,6 @@ export const updateProduct = async (req: Request, res: Response) => {
       }
     }
     
-    // Update product
     productRepository.merge(product, req.body);
     const updatedProduct = await productRepository.save(product);
     
@@ -118,17 +149,20 @@ export const updateProduct = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to update product',
-      error: error.message
+      error: (error instanceof Error) ? error.message : 'Unknown error'
     });
   }
 };
 
 export const deleteProduct = async (req: Request, res: Response) => {
   try {
+    const userId = req.user?.id;
     const { id } = req.params;
-    const { id: userId } = req.user;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is missing' });
+    }
     
-    const productRepository = getRepository(Product);
+    const productRepository = AppDataSource.getRepository(Product);
     const product = await productRepository.findOne({
       where: { id, userId }
     });
@@ -144,14 +178,14 @@ export const deleteProduct = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to delete product',
-      error: error.message
+      error: (error instanceof Error) ? error.message : 'Unknown error'
     });
   }
 };
 
 export const getAllCategories = async (req: Request, res: Response) => {
   try {
-    const categoryRepository = getRepository(ProductCategory);
+    const categoryRepository = AppDataSource.getRepository(ProductCategory);
     const categories = await categoryRepository.find({
       order: { name: 'ASC' }
     });
@@ -161,17 +195,21 @@ export const getAllCategories = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to fetch categories',
-      error: error.message
+      error: (error instanceof Error) ? error.message : 'Unknown error'
     });
   }
 };
 
 export const getTopSellingProducts = async (req: Request, res: Response) => {
   try {
-    const { id: userId } = req.user;
+    const userId = req.user?.id;
+    const { id } = req.params;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is missing' });
+    }
     const limit = parseInt(req.query.limit as string) || 5;
     
-    const productRepository = getRepository(Product);
+    const productRepository = AppDataSource.getRepository(Product);
     
     const products = await productRepository
       .createQueryBuilder('product')
@@ -185,7 +223,7 @@ export const getTopSellingProducts = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to fetch top selling products',
-      error: error.message
+      error: (error instanceof Error) ? error.message : 'Unknown error'
     });
   }
 };

@@ -8,9 +8,9 @@ import {
     OneToMany,
     JoinColumn,
   } from 'typeorm';
-  import { User } from './user.entity';
-  import { OrderItem } from './orderItem.entity';
-  import { ProductCategory } from './productCategory.entity';
+  import { User } from './User';
+  import { OrderItem } from './Order-Item';
+  import { ProductCategory } from './Product-Category';
   
   export enum StockStatus {
     IN_STOCK = 'In Stock',
@@ -21,52 +21,52 @@ import {
   @Entity('products')
   export class Product {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
   
     @Column()
-    name: string;
+    name!: string;
   
     @Column('text', { nullable: true })
-    description: string;
+    description!: string;
   
     @Column('decimal', { precision: 10, scale: 2 })
-    price: number;
+    price!: number;
   
     @Column({
       type: 'enum',
       enum: StockStatus,
       default: StockStatus.IN_STOCK,
     })
-    stockStatus: StockStatus;
+    stockStatus!: StockStatus;
   
     @Column({ nullable: true })
-    imageUrl: string;
+    imageUrl!: string;
   
     @Column({ default: true })
-    isActive: boolean;
+    isActive!: boolean;
   
     @ManyToOne(() => ProductCategory, (category) => category.products)
     @JoinColumn({ name: 'categoryId' })
-    category: ProductCategory;
+    category!: ProductCategory;
   
     @Column()
-    categoryId: string;
+    categoryId!: string;
   
     @ManyToOne(() => User, (user) => user.products)
     @JoinColumn({ name: 'userId' })
-    user: User;
+    user!: User;
   
     @Column()
-    userId: string;
+    userId!: string;
   
     @OneToMany(() => OrderItem, (orderItem) => orderItem.product)
-    orderItems: OrderItem[];
+    orderItems!: OrderItem[];
   
     @Column({ default: 0 })
-    totalOrders: number;
+    totalOrders!: number;
   
     @CreateDateColumn()
-    createdAt: Date;
+    createdAt!: Date;
   
     @UpdateDateColumn()
     updatedAt!: Date;

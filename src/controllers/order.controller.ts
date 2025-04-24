@@ -1,19 +1,23 @@
 import { Request, Response } from 'express';
-import { getRepository, Between, Like } from 'typeorm';
-import { Order, OrderStatus } from '../entities/order.entity';
-import { OrderItem } from '../entities/orderItem.entity';
-import { Product } from '../entities/product.entity';
+import { Between, Like } from 'typeorm';
+import { Order, OrderStatus } from '../entities/Order';
+import { OrderItem } from '../entities/Order-Item';
+import { Product } from '../entities/Product';
 import { getLast30DaysRange, getLast7DaysRange } from '../utils/date.utils';
+import { AppDataSource } from '../data-source';
 
 export const getAllOrders = async (req: Request, res: Response) => {
   try {
-    const { id: userId } = req.user;
+    const { id: userId } = req.user || {};
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
     const { status, search, period } = req.query;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
     
-    const orderRepository = getRepository(Order);
+    const orderRepository = AppDataSource.getRepository(Order);
     
     // Build query
     const queryBuilder = orderRepository
@@ -22,7 +26,6 @@ export const getAllOrders = async (req: Request, res: Response) => {
       .leftJoinAndSelect('items.product', 'product')
       .where('order.vendorId = :userId', { userId });
     
-    // Add filters
     if (status) {
       queryBuilder.andWhere('order.status = :status', { status });
     }
@@ -34,7 +37,6 @@ export const getAllOrders = async (req: Request, res: Response) => {
       );
     }
     
-    // Date range filter
     if (period === '7days') {
       const { start, end } = getLast7DaysRange();
       queryBuilder.andWhere('order.createdAt BETWEEN :start AND :end', { start, end });
@@ -43,10 +45,8 @@ export const getAllOrders = async (req: Request, res: Response) => {
       queryBuilder.andWhere('order.createdAt BETWEEN :start AND :end', { start, end });
     }
     
-    // Get total count
     const total = await queryBuilder.getCount();
     
-    // Get paginated results
     const orders = await queryBuilder
       .orderBy('order.createdAt', 'DESC')
       .skip(skip)
@@ -66,7 +66,7 @@ export const getAllOrders = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to fetch orders',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };
@@ -74,9 +74,12 @@ export const getAllOrders = async (req: Request, res: Response) => {
 export const getOrderById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { id: userId } = req.user;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
     
-    const orderRepository = getRepository(Order);
+    const orderRepository = AppDataSource.getRepository(Order);
     const order = await orderRepository.findOne({
       where: { id, vendorId: userId },
       relations: ['items', 'items.product', 'payment']
@@ -91,7 +94,7 @@ export const getOrderById = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to fetch order',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };
@@ -100,13 +103,16 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const { id: userId } = req.user;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
     
     if (!Object.values(OrderStatus).includes(status)) {
       return res.status(400).json({ message: 'Invalid order status' });
     }
     
-    const orderRepository = getRepository(Order);
+    const orderRepository = AppDataSource.getRepository(Order);
     const order = await orderRepository.findOne({
       where: { id, vendorId: userId }
     });
@@ -123,26 +129,27 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to update order status',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };
 
 export const getOrderStatistics = async (req: Request, res: Response) => {
   try {
-    const { id: userId } = req.user;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
     
-    const orderRepository = getRepository(Order);
+    const orderRepository = AppDataSource.getRepository(Order);
     
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     
-    // Get previous month range
     const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
     
-    // Get total orders count (current month)
     const totalOrdersCurrentMonth = await orderRepository.count({
       where: {
         vendorId: userId,
@@ -220,7 +227,6 @@ export const getOrderStatistics = async (req: Request, res: Response) => {
     
     const newCustomersPrevMonth = prevCustomersResult.count || 0;
     
-    // Calculate percentage change
     const customerPercentChange = newCustomersPrevMonth > 0
       ? ((newCustomersCurrentMonth - newCustomersPrevMonth) / newCustomersPrevMonth) * 100
       : 0;
@@ -243,27 +249,27 @@ export const getOrderStatistics = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to fetch order statistics',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };
 
 export const getRevenueOverview = async (req: Request, res: Response) => {
   try {
-    const { id: userId } = req.user;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
     
-    const orderRepository = getRepository(Order);
+    const orderRepository = AppDataSource.getRepository(Order);
     
-    // Get data for last 6 months
     const now = new Date();
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(now.getMonth() - 5);
     
-    // Set to start of month
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
     
-    // Get monthly revenue
     const monthlyRevenue = [];
     
     for (let i = 0; i < 6; i++) {
@@ -296,7 +302,7 @@ export const getRevenueOverview = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({
       message: 'Failed to fetch revenue overview',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };

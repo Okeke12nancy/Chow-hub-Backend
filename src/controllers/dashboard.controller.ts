@@ -1,22 +1,26 @@
 import { Request, Response } from 'express';
-import { getRepository, Between } from 'typeorm';
+import { Between } from 'typeorm';
 import { User } from '../entities/User';
 import { Product } from '../entities/Product';
 import { Order, OrderStatus } from '../entities/Order';
 import { Transaction } from '../entities/transaction.entity';
 import { PaymentStatus } from '../entities/Payment';
 import { getCurrentMonthRange, getPreviousMonthRange } from '../utils/date.utils';
+import { AppDataSource } from '../data-source';
 
 export const getDashboardOverview = async (req: Request, res: Response) => {
   try {
-    const { id: userId } = req.user;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is missing' });
+    }
     
     const { startOfMonth, endOfMonth } = getCurrentMonthRange();
     const { startOfPrevMonth, endOfPrevMonth } = getPreviousMonthRange();
     
-    const orderRepository = getRepository(Order);
-    const productRepository = getRepository(Product);
-    const transactionRepository = getRepository(Transaction);
+    const orderRepository = AppDataSource.getRepository(Order);
+    const productRepository = AppDataSource.getRepository(Product);
+    const transactionRepository = AppDataSource.getRepository(Transaction);
     
     const totalRevenueResult = await transactionRepository
       .createQueryBuilder('transaction')
@@ -146,10 +150,16 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching dashboard overview:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({
       success: false,
       message: 'Failed to fetch dashboard overview',
-      error: error.message
+      error: errorMessage
     });
   }
 };
+
+
+
+
+

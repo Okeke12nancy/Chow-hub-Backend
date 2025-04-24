@@ -6,26 +6,26 @@ import {
     UpdateDateColumn,
     OneToMany,
   } from 'typeorm';
-  import { Product } from './product.entity';
+  import { Product } from './Product';
   
   @Entity('product_categories')
   export class ProductCategory {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
   
     @Column()
-    name: string;
+    name!: string;
   
     @Column({ nullable: true })
-    description: string;
+    description!: string;
   
     @OneToMany(() => Product, (product) => product.category)
-    products: Product[];
+    products!: Product[];
   
     @CreateDateColumn()
-    createdAt: Date;
+    createdAt!: Date;
   
     @UpdateDateColumn()
-    updatedAt: Date;
+    updatedAt!: Date;
   }
   
