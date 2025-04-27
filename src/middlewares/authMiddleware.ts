@@ -1,15 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../entities/User';
-import config from '../config/app';
 import { AppDataSource } from '../data-source';
-
-interface TokenPayload {
-  id: string;
-  role: string;
-  iat: number;
-  exp: number;
-}
 
 declare global {
   namespace Express {
@@ -19,50 +11,34 @@ declare global {
   }
 }
 
-export const authenticate = async (
+export const authMiddleware = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.header('authorization');
-    
-    if (!authHeader) {
-      return res.status(401).json({ message: 'No authorization token provided' });
-    }
+    const token = req.headers.authorization?.split(' ')[1];
 
-    const token = authHeader.split(' ')[1];
-    
     if (!token) {
-      return res.status(401).json({ message: 'Invalid token format' });
+      res.status(401).json({ message: 'Authentication required' });
+      return ;
     }
 
-    const decoded = jwt.verify(token, config.jwtSecret) as TokenPayload;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
     
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({ where: { id: decoded.id } });
-    
+
     if (!user) {
-      return res.status(401).json({ message: 'User not found' });
+       res.status(401).json({ message: 'User not found' });
+       return
     }
 
     req.user = user;
-    next();
+    next()
   } catch (error) {
-    return res.status(401).json({ message: 'Invalid or expired token' });
+    console.error('Auth middleware error:', error);
+     res.status(401).json({ message: 'Invalid or expired token' });
+     return
   }
-};
-
-export const authorize = (roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
-    }
-
-    next();
-  };
 };

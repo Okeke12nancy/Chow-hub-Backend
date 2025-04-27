@@ -27,7 +27,7 @@ import {
     @Column({
       type: 'enum',
       enum: PaymentMethod,
-      default: PaymentMethod.CREDIT_CARD,
+      default: PaymentMethod.WALLET,
     })
     paymentMethod!: PaymentMethod;
   

@@ -10,7 +10,7 @@ import {
   } from 'typeorm';
   import { User } from './User';
   import { OrderItem } from './Order-Item';
-  import { ProductCategory } from './Product-Category';
+  // import { ProductCategory } from './Product-Category';
   
   export enum StockStatus {
     IN_STOCK = 'In Stock',
@@ -45,13 +45,14 @@ import {
     @Column({ default: true })
     isActive!: boolean;
   
-    @ManyToOne(() => ProductCategory, (category) => category.products)
-    @JoinColumn({ name: 'categoryId' })
-    category!: ProductCategory;
+    // @ManyToOne(() => ProductCategory, (category) => category.products)
+    // @JoinColumn({ name: 'categoryId' })
+    // category!: ProductCategory;
   
-    @Column()
-    categoryId!: string;
-  
+    // @Column()
+    // categoryId!: string;
+    @Column({ nullable: false })
+    productCategory!: string
     @ManyToOne(() => User, (user) => user.products)
     @JoinColumn({ name: 'userId' })
     user!: User;

@@ -1,31 +1,31 @@
-import {
-    Entity,
-    PrimaryGeneratedColumn,
-    Column,
-    CreateDateColumn,
-    UpdateDateColumn,
-    OneToMany,
-  } from 'typeorm';
-  import { Product } from './Product';
+// import {
+//     Entity,
+//     PrimaryGeneratedColumn,
+//     Column,
+//     CreateDateColumn,
+//     UpdateDateColumn,
+//     OneToMany,
+//   } from 'typeorm';
+//   import { Product } from './Product';
   
-  @Entity('product_categories')
-  export class ProductCategory {
-    @PrimaryGeneratedColumn('uuid')
-    id!: string;
+//   @Entity('product_categories')
+//   export class ProductCategory {
+//     @PrimaryGeneratedColumn('uuid')
+//     id!: string;
   
-    @Column()
-    name!: string;
+//     @Column()
+//     name!: string;
   
-    @Column({ nullable: true })
-    description!: string;
+//     @Column({ nullable: true })
+//     description!: string;
   
-    @OneToMany(() => Product, (product) => product.category)
-    products!: Product[];
+//     @OneToMany(() => Product, (product) => product.category)
+//     products!: Product[];
   
-    @CreateDateColumn()
-    createdAt!: Date;
+//     @CreateDateColumn()
+//     createdAt!: Date;
   
-    @UpdateDateColumn()
-    updatedAt!: Date;
-  }
+//     @UpdateDateColumn()
+//     updatedAt!: Date;
+//   }
   

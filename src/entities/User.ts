@@ -6,10 +6,12 @@ import {
     UpdateDateColumn,
     OneToMany,
     BeforeInsert,
+    OneToOne,
   } from 'typeorm';
   import { Product } from '../entities/Product';
   import { Order } from '../entities/Order';
   import * as bcrypt from 'bcryptjs';
+  import { Wallet } from './Wallet';
   
   @Entity('users')
   export class User {
@@ -39,6 +41,9 @@ import {
   
     @Column({ nullable: true })
     profileImage!: string;
+
+    @Column({ nullable: true })
+    phone!: string;
   
     @Column({ default: 'vendor' })
     role!: string;
@@ -51,6 +56,9 @@ import {
   
     @OneToMany(() => Order, (order) => order.vendor)
     orders!: Order[];
+
+    @OneToOne(() => Wallet, wallet => wallet.user)
+    wallet: Wallet;
   
     @CreateDateColumn()
     createdAt!: Date;

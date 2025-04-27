@@ -1,123 +1,174 @@
-import { Request, Response } from "express";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { AppDataSource } from "../data-source";
-import { User } from "../entities/User";
-import dotenv from "dotenv"
+// import { Request, Response } from "express";
+// import bcrypt from "bcryptjs";
+// import jwt from "jsonwebtoken";
+// import { AppDataSource } from "../data-source";
+// import { User } from "../entities/User";
+// import dotenv from "dotenv"
 
-dotenv.config()
+// dotenv.config()
 
-const userRepository = AppDataSource.getRepository(User);
+// const userRepository = AppDataSource.getRepository(User);
 
-const generateToken = (id: number) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || "secret", {
-    expiresIn: "30d",
-  });
-};
+// const generateToken = (id: number) => {
+//   return jwt.sign({ id }, process.env.JWT_SECRET || "secret", {
+//     expiresIn: "30d",
+//   });
+// };
 
-export const register = async (req: Request, res: Response) => {
-  try {
-    const { firstName, lastName, email, password, businessName, phoneNumber } = req.body;
+// export const register = async (req: Request, res: Response) => {
+//   try {
+//     const { firstName, lastName, email, password, businessName, phoneNumber } = req.body;
 
-    const userExists = await userRepository.findOne({ where: { email } });
-    if (userExists) {
-      return res.status(400).json({
-        success: false,
-        error: "User already exists",
-      });
-    }
+//     const userExists = await userRepository.findOne({ where: { email } });
+//     if (userExists) {
+//       return res.status(400).json({
+//         success: false,
+//         error: "User already exists",
+//       });
+//     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+//     const salt = await bcrypt.genSalt(10);
+//     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const user = userRepository.create({
-      firstName,
-      lastName,
-      email,
-      password: hashedPassword,
-      businessName,
-      phoneNumber,
-    });
+//     const user = userRepository.create({
+//       firstName,
+//       lastName,
+//       email,
+//       password: hashedPassword,
+//       businessName,
+//       phoneNumber,
+//     });
 
-    await userRepository.save(user);
+//     await userRepository.save(user);
 
-    res.status(201).json({
-      success: true,
-      data: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        businessName: user.businessName,
-        token: generateToken(Number(user.id)),
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: "Server error",
-    });
+//     res.status(201).json({
+//       success: true,
+//       data: {
+//         id: user.id,
+//         firstName: user.firstName,
+//         lastName: user.lastName,
+//         email: user.email,
+//         businessName: user.businessName,
+//         token: generateToken(Number(user.id)),
+//       },
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       error: "Server error",
+//     });
+//   }
+// };
+
+// export const login = async (req: Request, res: Response) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     const user = await userRepository.findOne({
+//       where: { email },
+//       select: ["id", "firstName", "lastName", "email", "password", "businessName"],
+//     });
+
+//     if (!user) {
+//       return res.status(401).json({
+//         success: false,
+//         error: "Invalid credentials",
+//       });
+//     }
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       return res.status(401).json({
+//         success: false,
+//         error: "Invalid credentials",
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       data: {
+//         id: user.id,
+//         firstName: user.firstName,
+//         lastName: user.lastName,
+//         email: user.email,
+//         businessName: user.businessName,
+//         token: generateToken(Number(user.id)),
+//       },
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       error: "Server error",
+//     });
+//   }
+// };
+
+// export const getCurrentUser = async (req: Request, res: Response) => {
+//   try {
+//     const user = await userRepository.findOne({ 
+//       where: { id: req.user?.id },
+//       select: ["id", "firstName", "lastName", "email", "businessName", "phoneNumber", "profileImage", "bio", "role"]
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       data: user,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       error: "Server error",
+//     });
+//   }
+// };
+
+import { Request, Response } from 'express';
+import { AuthService } from '../services/auth.service';
+
+export class AuthController {
+  private authService: AuthService;
+
+  constructor() {
+    this.authService = new AuthService();
   }
-};
 
-export const login = async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body;
-
-    const user = await userRepository.findOne({
-      where: { email },
-      select: ["id", "firstName", "lastName", "email", "password", "businessName"],
-    });
-
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: "Invalid credentials",
-      });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        error: "Invalid credentials",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        businessName: user.businessName,
-        token: generateToken(Number(user.id)),
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: "Server error",
-    });
+  private handleError(res: Response, error: any, message: string) {
+    console.error(error);
+    res.status(500).json({ message, error: error.message });
   }
-};
 
-export const getCurrentUser = async (req: Request, res: Response) => {
-  try {
-    const user = await userRepository.findOne({ 
-      where: { id: req.user?.id },
-      select: ["id", "firstName", "lastName", "email", "businessName", "phoneNumber", "profileImage", "bio", "role"]
-    });
-
-    res.status(200).json({
-      success: true,
-      data: user,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: "Server error",
-    });
+  async register(req: Request, res: Response): Promise<void> {
+    try {
+      const userData = {
+        ...req.body,
+        profileImage: req.file ? req.file.path : undefined
+      };
+      
+      console.log("User data being sent to service:", userData);
+      const result = await this.authService.register(userData);
+      res.status(201).json(result);
+    } catch (error: any) {
+      if (error.message === 'Email already in use') {
+        res.status(400).json({ message: error.message });
+      } else {
+        this.handleError(res, error, 'Failed to register user');
+      }
+    }
   }
-};
+
+  async login(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, password } = req.body;
+      const result = await this.authService.login(email, password);
+      res.status(200).json(result);
+    } catch (error: any) {
+      if (error.message === 'Invalid email or password') {
+        res.status(401).json({ message: error.message });
+      } else if (error.message === 'Email and password are required') {
+        res.status(400).json({ message: error.message });
+      } else {
+        this.handleError(res, error, 'Failed to login');
+      }
+    }
+  }
+}

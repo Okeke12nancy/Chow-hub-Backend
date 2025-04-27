@@ -6,8 +6,13 @@ import { Product } from '../entities/Product';
 import { Order } from '../entities/Order';
 import { OrderItem } from '../entities/Order-Item';
 import { Payment } from '../entities/Payment';
-import { ProductCategory } from '../entities/Product-Category';
+// import { ProductCategory } from '../entities/Product-Category';
+import { Restaurant } from '../entity/Restaurant';
+import { MenuItem } from '../entity/MenuItem';
 import { Transaction } from '../entities/transaction.entity';
+import { Wallet } from '../entity/Wallet';
+import { WalletTransaction } from '../entity/WalletTransaction';
+import { Voucher } from '../entity/Voucher';
 
 dotenv.config();
 
@@ -18,9 +23,12 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_DATABASE || 'chow_hub',
-  synchronize: process.env.NODE_ENV === 'development',
+  // synchronize:false,
+  synchronize: true,
+  dropSchema: true, 
   logging: process.env.NODE_ENV === 'development',
-  entities: [User, Product, Order, OrderItem, Payment, ProductCategory, Transaction],
+  // entities: [User, Product, Order, OrderItem, Payment, ProductCategory, Transaction],
+  entities: [User, Product, Order, OrderItem, Payment, Transaction, Voucher, Restaurant, MenuItem, Wallet, WalletTransaction],
   migrations: ["src/migrations/**/*.ts"],
   subscribers: ["src/subscribers/**/*.ts"],
 });

@@ -16,10 +16,7 @@ import {
   }
   
   export enum PaymentMethod {
-    CREDIT_CARD = 'Credit Card',
-    CASH_ON_DELIVERY = 'Cash on Delivery',
-    MOBILE_PAYMENT = 'Mobile Payment',
-    BANK_TRANSFER = 'Bank Transfer',
+    WALLET = 'Wallet',
     VOUCHER = 'CEMCS Voucher',
   }
   
@@ -37,7 +34,7 @@ import {
     @Column({
       type: 'enum',
       enum: PaymentMethod,
-      default: PaymentMethod.CREDIT_CARD,
+      default: PaymentMethod.WALLET,
     })
     paymentMethod!: PaymentMethod;
   
