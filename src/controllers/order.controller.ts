@@ -1,449 +1,527 @@
-// import { Request, Response } from 'express';
-// import { Between, Like } from 'typeorm';
-// import { Order, OrderStatus } from '../entities/Order';
-// import { OrderItem } from '../entities/Order-Item';
-// import { Product } from '../entities/Product';
-// import { getLast30DaysRange, getLast7DaysRange } from '../utils/date.utils';
-// import { AppDataSource } from '../data-source';
-
-// export const getAllOrders = async (req: Request, res: Response) => {
-//   try {
-//     const { id: userId } = req.user || {};
-//     if (!userId) {
-//       return res.status(401).json({ message: 'Unauthorized: User not found' });
-//     }
-//     const { status, search, period } = req.query;
-//     const page = parseInt(req.query.page as string) || 1;
-//     const limit = parseInt(req.query.limit as string) || 10;
-//     const skip = (page - 1) * limit;
-    
-//     const orderRepository = AppDataSource.getRepository(Order);
-    
-//     // Build query
-//     const queryBuilder = orderRepository
-//       .createQueryBuilder('order')
-//       .leftJoinAndSelect('order.items', 'items')
-//       .leftJoinAndSelect('items.product', 'product')
-//       .where('order.vendorId = :userId', { userId });
-    
-//     if (status) {
-//       queryBuilder.andWhere('order.status = :status', { status });
-//     }
-    
-//     if (search) {
-//       queryBuilder.andWhere(
-//         '(order.orderNumber LIKE :search OR order.customerName LIKE :search OR order.customerEmail LIKE :search)',
-//         { search: `%${search}%` }
-//       );
-//     }
-    
-//     if (period === '7days') {
-//       const { start, end } = getLast7DaysRange();
-//       queryBuilder.andWhere('order.createdAt BETWEEN :start AND :end', { start, end });
-//     } else if (period === '30days') {
-//       const { start, end } = getLast30DaysRange();
-//       queryBuilder.andWhere('order.createdAt BETWEEN :start AND :end', { start, end });
-//     }
-    
-//     const total = await queryBuilder.getCount();
-    
-//     const orders = await queryBuilder
-//       .orderBy('order.createdAt', 'DESC')
-//       .skip(skip)
-//       .take(limit)
-//       .getMany();
-    
-//     res.status(200).json({
-//       orders,
-//       pagination: {
-//         page,
-//         limit,
-//         total,
-//         pages: Math.ceil(total / limit)
-//       }
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       message: 'Failed to fetch orders',
-//       error: error instanceof Error ? error.message : 'Unknown error'
-//     });
-//   }
-// };
-
-// export const getOrderById = async (req: Request, res: Response) => {
-//   try {
-//     const { id } = req.params;
-//     const userId = req.user?.id;
-//     if (!userId) {
-//       return res.status(401).json({ message: 'Unauthorized: User not found' });
-//     }
-    
-//     const orderRepository = AppDataSource.getRepository(Order);
-//     const order = await orderRepository.findOne({
-//       where: { id, vendorId: userId },
-//       relations: ['items', 'items.product', 'payment']
-//     });
-    
-//     if (!order) {
-//       return res.status(404).json({ message: 'Order not found' });
-//     }
-    
-//     res.status(200).json(order);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       message: 'Failed to fetch order',
-//       error: error instanceof Error ? error.message : 'Unknown error'
-//     });
-//   }
-// };
-
-// export const updateOrderStatus = async (req: Request, res: Response) => {
-//   try {
-//     const { id } = req.params;
-//     const { status } = req.body;
-//     const userId = req.user?.id;
-//     if (!userId) {
-//       return res.status(401).json({ message: 'Unauthorized: User not found' });
-//     }
-    
-//     if (!Object.values(OrderStatus).includes(status)) {
-//       return res.status(400).json({ message: 'Invalid order status' });
-//     }
-    
-//     const orderRepository = AppDataSource.getRepository(Order);
-//     const order = await orderRepository.findOne({
-//       where: { id, vendorId: userId }
-//     });
-    
-//     if (!order) {
-//       return res.status(404).json({ message: 'Order not found' });
-//     }
-    
-//     order.status = status;
-//     await orderRepository.save(order);
-    
-//     res.status(200).json(order);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       message: 'Failed to update order status',
-//       error: error instanceof Error ? error.message : 'Unknown error'
-//     });
-//   }
-// };
-
-// export const getOrderStatistics = async (req: Request, res: Response) => {
-//   try {
-//     const userId = req.user?.id;
-//     if (!userId) {
-//       return res.status(401).json({ message: 'Unauthorized: User not found' });
-//     }
-    
-//     const orderRepository = AppDataSource.getRepository(Order);
-    
-//     const now = new Date();
-//     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-//     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    
-//     const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-//     const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-    
-//     const totalOrdersCurrentMonth = await orderRepository.count({
-//       where: {
-//         vendorId: userId,
-//         createdAt: Between(startOfMonth, endOfMonth)
-//       }
-//     });
-    
-//     // Get total orders count (previous month)
-//     const totalOrdersPrevMonth = await orderRepository.count({
-//       where: {
-//         vendorId: userId,
-//         createdAt: Between(startOfPrevMonth, endOfPrevMonth)
-//       }
-//     });
-    
-//     // Calculate percentage change
-//     const orderPercentChange = totalOrdersPrevMonth > 0
-//       ? ((totalOrdersCurrentMonth - totalOrdersPrevMonth) / totalOrdersPrevMonth) * 100
-//       : 0;
-    
-//     // Get total revenue (current month)
-//     const totalRevenueResult = await orderRepository
-//       .createQueryBuilder('order')
-//       .select('SUM(order.totalAmount)', 'total')
-//       .where('order.vendorId = :userId', { userId })
-//       .andWhere('order.createdAt BETWEEN :start AND :end', {
-//         start: startOfMonth,
-//         end: endOfMonth
-//       })
-//       .getRawOne();
-    
-//     const totalRevenueCurrentMonth = totalRevenueResult.total || 0;
-    
-//     // Get total revenue (previous month)
-//     const prevRevenueResult = await orderRepository
-//       .createQueryBuilder('order')
-//       .select('SUM(order.totalAmount)', 'total')
-//       .where('order.vendorId = :userId', { userId })
-//       .andWhere('order.createdAt BETWEEN :start AND :end', {
-//         start: startOfPrevMonth,
-//         end: endOfPrevMonth
-//       })
-//       .getRawOne();
-    
-//     const totalRevenuePrevMonth = prevRevenueResult.total || 0;
-    
-//     // Calculate percentage change
-//     const revenuePercentChange = totalRevenuePrevMonth > 0
-//       ? ((totalRevenueCurrentMonth - totalRevenuePrevMonth) / totalRevenuePrevMonth) * 100
-//       : 0;
-    
-//     // Get new customers count (unique customer emails this month)
-//     const newCustomersResult = await orderRepository
-//       .createQueryBuilder('order')
-//       .select('COUNT(DISTINCT order.customerEmail)', 'count')
-//       .where('order.vendorId = :userId', { userId })
-//       .andWhere('order.createdAt BETWEEN :start AND :end', {
-//         start: startOfMonth,
-//         end: endOfMonth
-//       })
-//       .getRawOne();
-    
-//     const newCustomersCurrentMonth = newCustomersResult.count || 0;
-    
-//     // Get new customers count (previous month)
-//     const prevCustomersResult = await orderRepository
-//       .createQueryBuilder('order')
-//       .select('COUNT(DISTINCT order.customerEmail)', 'count')
-//       .where('order.vendorId = :userId', { userId })
-//       .andWhere('order.createdAt BETWEEN :start AND :end', {
-//         start: startOfPrevMonth,
-//         end: endOfPrevMonth
-//       })
-//       .getRawOne();
-    
-//     const newCustomersPrevMonth = prevCustomersResult.count || 0;
-    
-//     const customerPercentChange = newCustomersPrevMonth > 0
-//       ? ((newCustomersCurrentMonth - newCustomersPrevMonth) / newCustomersPrevMonth) * 100
-//       : 0;
-    
-//     res.status(200).json({
-//       totalOrders: {
-//         count: totalOrdersCurrentMonth,
-//         percentChange: orderPercentChange
-//       },
-//       totalRevenue: {
-//         amount: totalRevenueCurrentMonth,
-//         percentChange: revenuePercentChange
-//       },
-//       newCustomers: {
-//         count: newCustomersCurrentMonth,
-//         percentChange: customerPercentChange
-//       }
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       message: 'Failed to fetch order statistics',
-//       error: error instanceof Error ? error.message : 'Unknown error'
-//     });
-//   }
-// };
-
-// export const getRevenueOverview = async (req: Request, res: Response) => {
-//   try {
-//     const userId = req.user?.id;
-//     if (!userId) {
-//       return res.status(401).json({ message: 'Unauthorized: User not found' });
-//     }
-    
-//     const orderRepository = AppDataSource.getRepository(Order);
-    
-//     const now = new Date();
-//     const sixMonthsAgo = new Date();
-//     sixMonthsAgo.setMonth(now.getMonth() - 5);
-    
-//     sixMonthsAgo.setDate(1);
-//     sixMonthsAgo.setHours(0, 0, 0, 0);
-    
-//     const monthlyRevenue = [];
-    
-//     for (let i = 0; i < 6; i++) {
-//       const month = new Date(sixMonthsAgo);
-//       month.setMonth(month.getMonth() + i);
-      
-//       const startOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
-//       const endOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
-      
-//       const result = await orderRepository
-//         .createQueryBuilder('order')
-//         .select('SUM(order.totalAmount)', 'total')
-//         .where('order.vendorId = :userId', { userId })
-//         .andWhere('order.createdAt BETWEEN :start AND :end', {
-//           start: startOfMonth,
-//           end: endOfMonth
-//         })
-//         .getRawOne();
-      
-//       const monthName = month.toLocaleString('default', { month: 'short' });
-      
-//       monthlyRevenue.push({
-//         month: monthName,
-//         revenue: parseFloat(result.total) || 0
-//       });
-//     }
-    
-//     res.status(200).json(monthlyRevenue);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       message: 'Failed to fetch revenue overview',
-//       error: error instanceof Error ? error.message : 'Unknown error'
-//     });
-//   }
-// };
-
-
-import { Request, Response } from 'express';
-import { OrderStatus } from '../entities/Order';
-import { OrderService } from '../services/order.service';
+import type { Request, Response, NextFunction } from "express"
+import { Order, OrderStatus, PaymentMethod, PaymentStatus } from "../entities/Order"
+import { OrderItem } from "../entities/Order-Item"
+import { Product } from "../entities/Product"
+import { Vendor } from "../entities/vendor"
+import { AppError } from "../utils/appError"
+import { generateInvoicePDF } from "../utils/pdfgenerator"
+import { AppDataSource } from "../data-source"
+import { EntityManager } from "typeorm"
 
 export class OrderController {
-  private orderService: OrderService;
-  constructor() {
-    this.orderService = new OrderService();
+  async createOrder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { vendorId, items, deliveryAddress, deliveryPhone, paymentMethod, notes } = req.body
+      const userId = req.user!.id
+
+      // Check if vendor exists
+      const vendorRepository = AppDataSource.getRepository(Vendor)
+      const vendor = await vendorRepository.findOne(vendorId)
+
+      if (!vendor) {
+        return next(new AppError("Vendor not found", 404))
+      }
+
+      // Validate items
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return next(new AppError("Order must contain at least one item", 400))
+      }
+
+      // Get product details and calculate total
+      const productRepository = AppDataSource.getRepository(Product)
+      let subtotal = 0
+      const orderItems: OrderItem[] = []
+
+      for (const item of items) {
+        const product = await productRepository.findOne(item.productId)
+
+        if (!product) {
+          return next(new AppError(`Product with ID ${item.productId} not found`, 404))
+        }
+
+        if (!product.isAvailable) {
+          return next(new AppError(`Product ${product.name} is not available`, 400))
+        }
+
+        const itemTotal = product.price * item.quantity
+        subtotal += itemTotal
+
+        orderItems.push({
+          productId: product.id,
+          quantity: item.quantity,
+          price: product.price,
+        } as OrderItem)
+      }
+
+
+
+      // Create order using transaction
+      const orderRepository = AppDataSource.getRepository(Order)
+      const orderItemRepository = AppDataSource.getRepository(OrderItem)
+
+      const result = await AppDataSource.manager.transaction(async (transactionalEntityManager: EntityManager) => {
+        // Create order
+        const newOrder = orderRepository.create({
+          userId,
+          vendorId,
+          subtotal,
+          deliveryAddress,
+          deliveryPhone,
+          paymentMethod: paymentMethod as PaymentMethod,
+          notes,
+          status: OrderStatus.PENDING,
+          paymentStatus: PaymentStatus.PENDING,
+        } as Partial<Order>)
+
+        const savedOrder = await transactionalEntityManager.save(newOrder)
+
+        // Create order items
+        for (const item of orderItems) {
+          const newOrderItem = orderItemRepository.create({
+            ...item,
+            orderId: savedOrder.id,
+          })
+          await transactionalEntityManager.save(newOrderItem)
+        }
+
+        return savedOrder
+      })
+
+      // Get complete order with items
+      const completeOrder = await orderRepository.findOne({
+        where: { id: result.id },
+        relations: ["items", "items.product"],
+      })
+
+      res.status(201).json({
+        status: "success",
+        data: {
+          order: completeOrder,
+        },
+      })
+    } catch (error) {
+      next(error)
+    }
   }
-  
-  getAllOrders = async (req: Request, res: Response) => {
+
+  async getMyOrders(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id: userId } = req.user || {};
-      if (!userId) {
-        res.status(401).json({ message: 'Unauthorized: User not found' });
-        return
-      }
-      
-      const { status, search, period } = req.query;
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-      
-      const result = await this.orderService.getAllOrders(
-        userId,
-        status as string,
-        search as string,
-        period as string,
-        page,
-        limit
-      );
-      
-      res.status(200).json(result);
+      const userId = req.user!.id
+      const orderRepository = AppDataSource.getRepository(Order)
+
+      const orders = await orderRepository.find({
+        where: { userId },
+        relations: ["items", "items.product", "vendor"],
+        order: { createdAt: "DESC" },
+      })
+
+      res.status(200).json({
+        status: "success",
+        results: orders.length,
+        data: {
+          orders,
+        },
+      })
     } catch (error) {
-      console.error(error);
-      res.status(500).json({
-        message: 'Failed to fetch orders',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      next(error)
     }
-  };
-  
-  getOrderById = async (req: Request, res: Response) => {
+  }
+
+  async getMyOrderById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
-      const userId = req.user?.id;
-      if (!userId) {
-         res.status(401).json({ message: 'Unauthorized: User not found' });
-         return
-      }
-      
-      const order = await this.orderService.getOrderById(id, userId);
-      
+      const userId = req.user!.id
+      const { id } = req.params
+
+      const orderRepository = AppDataSource.getRepository(Order)
+      const order = await orderRepository.findOne({
+        where: { id, userId },
+        relations: ["items", "items.product", "vendor", "user"],
+      })
+
       if (!order) {
-         res.status(404).json({ message: 'Order not found' });
-         return
+        return next(new AppError("Order not found", 404))
       }
-      
-      res.status(200).json(order);
+
+      res.status(200).json({
+        status: "success",
+        data: {
+          order,
+        },
+      })
     } catch (error) {
-      console.error(error);
-      res.status(500).json({
-        message: 'Failed to fetch order',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      next(error)
     }
-  };
-  
-  updateOrderStatus = async (req: Request, res: Response) => {
+  }
+
+  async getVendorOrders(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
-      const { status } = req.body;
-      const userId = req.user?.id;
-      if (!userId) {
-        res.status(401).json({ message: 'Unauthorized: User not found' });
-        return
+      const userId = req.user!.id
+
+      // Get vendor ID for the current user
+      const vendorRepository = AppDataSource.getRepository(Vendor)
+      const vendor = await vendorRepository.findOne({ where: { userId } })
+
+      if (!vendor) {
+        return next(new AppError("Vendor profile not found", 404))
       }
-      
-      if (!Object.values(OrderStatus).includes(status)) {
-        res.status(400).json({ message: 'Invalid order status' });
-        return
+
+      const { status } = req.query
+
+      const orderRepository = AppDataSource.getRepository(Order)
+      const query = {
+        where: { vendorId: vendor.id },
+        relations: ["items", "items.product", "user"],
+        order: { createdAt: "DESC" as const },
       }
-      
-      const order = await this.orderService.updateOrderStatus(id, userId, status);
-      
+
+      // if (status) {
+      //   query.where = { ...query.where, status: status as OrderStatus }
+      // }
+
+      const orders = await orderRepository.find(query)
+
+      res.status(200).json({
+        status: "success",
+        results: orders.length,
+        data: {
+          orders,
+        },
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async getVendorOrderById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.id
+      const { id } = req.params
+
+      // Get vendor ID for the current user
+      const vendorRepository = AppDataSource.getRepository(Vendor)
+      const vendor = await vendorRepository.findOne({ where: { userId } })
+
+      if (!vendor) {
+        return next(new AppError("Vendor profile not found", 404))
+      }
+
+      const orderRepository = AppDataSource.getRepository(Order)
+      const order = await orderRepository.findOne({
+        where: { id, vendorId: vendor.id },
+        relations: ["items", "items.product", "user"],
+      })
+
       if (!order) {
-         res.status(404).json({ message: 'Order not found' });
-         return
+        return next(new AppError("Order not found", 404))
       }
-      
-      res.status(200).json(order);
+
+      res.status(200).json({
+        status: "success",
+        data: {
+          order,
+        },
+      })
     } catch (error) {
-      console.error(error);
-      res.status(500).json({
-        message: 'Failed to update order status',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      next(error)
     }
-  };
-  
-  getOrderStatistics = async (req: Request, res: Response) => {
+  }
+
+  async updateOrderStatus(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        res.status(401).json({ message: 'Unauthorized: User not found' });
-        return
+      const userId = req.user!.id
+      const { id } = req.params
+      const { status } = req.body
+
+      // Get vendor ID for the current user
+      const vendorRepository = AppDataSource.getRepository(Vendor)
+      const vendor = await vendorRepository.findOne({ where: { userId } })
+
+      if (!vendor) {
+        return next(new AppError("Vendor profile not found", 404))
       }
-      
-      const statistics = await this.orderService.getOrderStatistics(userId);
-      
-      res.status(200).json(statistics);
+
+      // Validate status
+      if (!Object.values(OrderStatus).includes(status as OrderStatus)) {
+        return next(new AppError("Invalid order status", 400))
+      }
+
+      const orderRepository = AppDataSource.getRepository(Order)
+      const order = await orderRepository.findOne({
+        where: { id, vendorId: vendor.id },
+      })
+
+      if (!order) {
+        return next(new AppError("Order not found", 404))
+      }
+
+      order.status = status as OrderStatus
+
+      await orderRepository.save(order)
+
+      res.status(200).json({
+        status: "success",
+        data: {
+          order,
+        },
+      })
     } catch (error) {
-      console.error(error);
-      res.status(500).json({
-        message: 'Failed to fetch order statistics',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      next(error)
     }
-  };
-  
-  getRevenueOverview = async (req: Request, res: Response) => {
+  }
+
+  async getAllOrders(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        res.status(401).json({ message: 'Unauthorized: User not found' });
-        return
+      const { status, vendorId, fromDate, toDate } = req.query
+
+      const orderRepository = AppDataSource.getRepository(Order)
+      let queryBuilder = orderRepository
+        .createQueryBuilder("order")
+        .leftJoinAndSelect("order.items", "items")
+        .leftJoinAndSelect("items.product", "product")
+        .leftJoinAndSelect("order.user", "user")
+        .leftJoinAndSelect("order.vendor", "vendor")
+
+      // Apply filters
+      if (status) {
+        queryBuilder = queryBuilder.andWhere("order.status = :status", { status })
       }
-      
-      const revenueOverview = await this.orderService.getRevenueOverview(userId);
-      
-      res.status(200).json(revenueOverview);
+
+      if (vendorId) {
+        queryBuilder = queryBuilder.andWhere("order.vendorId = :vendorId", { vendorId })
+      }
+
+      if (fromDate) {
+        queryBuilder = queryBuilder.andWhere("order.createdAt >= :fromDate", { fromDate })
+      }
+
+      if (toDate) {
+        queryBuilder = queryBuilder.andWhere("order.createdAt <= :toDate", { toDate })
+      }
+
+      queryBuilder = queryBuilder.orderBy("order.createdAt", "DESC")
+
+      const orders = await queryBuilder.getMany()
+
+      res.status(200).json({
+        status: "success",
+        results: orders.length,
+        data: {
+          orders,
+        },
+      })
     } catch (error) {
-      console.error(error);
-      res.status(500).json({
-        message: 'Failed to fetch revenue overview',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      next(error)
     }
-  };
+  }
+
+  async getOrderById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params
+
+      const orderRepository = AppDataSource.getRepository(Order)
+      const order = await orderRepository.findOne({
+        where: { id },
+        relations: ["items", "items.product", "user", "vendor"],
+      })
+
+      if (!order) {
+        return next(new AppError("Order not found", 404))
+      }
+
+      res.status(200).json({
+        status: "success",
+        data: {
+          order,
+        },
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async updateOrder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params
+      const { status, paymentStatus } = req.body
+
+      const orderRepository = AppDataSource.getRepository(Order)
+      const order = await orderRepository.findOne({ where: { id } })
+
+      if (!order) {
+        return next(new AppError("Order not found", 404))
+      }
+
+      // Update order fields
+      if (status && Object.values(OrderStatus).includes(status as OrderStatus)) {
+        order.status = status as OrderStatus
+      }
+
+      if (paymentStatus && Object.values(PaymentStatus).includes(paymentStatus as PaymentStatus)) {
+        order.paymentStatus = paymentStatus as PaymentStatus
+      }
+
+      await orderRepository.save(order)
+
+      res.status(200).json({
+        status: "success",
+        data: {
+          order,
+        },
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async deleteOrder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params
+
+      const orderRepository = AppDataSource.getRepository(Order)
+      const order = await orderRepository.findOneBy({ id })
+
+      if (!order) {
+        return next(new AppError("Order not found", 404))
+      }
+
+      await orderRepository.remove(order)
+
+      res.status(204).json({
+        status: "success",
+        data: null,
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async generateInvoice(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params
+      const userId = req.user!.id
+
+      const orderRepository = AppDataSource.getRepository(Order)
+      let order
+
+      // Check if user is customer or vendor
+      if (req.user!.role === "customer") {
+        order = await orderRepository.findOne({
+          where: { id, userId },
+          relations: ["items", "items.product", "vendor", "user"],
+        })
+      } else if (req.user!.role === "vendor") {
+        // Get vendor ID for the current user
+        const vendorRepository = AppDataSource.getRepository(Vendor)
+        const vendor = await vendorRepository.findOne({ where: { userId } })
+
+        if (!vendor) {
+          return next(new AppError("Vendor profile not found", 404))
+        }
+
+        order = await orderRepository.findOne({
+          where: { id, vendorId: vendor.id },
+          relations: ["items", "items.product", "vendor", "user"],
+        })
+      } else {
+        // Admin can view any order
+        order = await orderRepository.findOne({
+          where: { id },
+          relations: ["items", "items.product", "vendor", "user"],
+        })
+      }
+
+      if (!order) {
+        return next(new AppError("Order not found", 404))
+      }
+
+      // Generate invoice data for the response
+      const invoiceData = {
+        invoiceNumber: `INV-${order.id}`,
+        orderDate: order.createdAt,
+        customerName: order.user.name,
+        customerEmail: order.user.email,
+        customerAddress: order.user.address,
+        items: order.items.map((item: OrderItem) => ({
+          id: item.product.id,
+          name: item.product.name,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        subtotal: order.subtotal,
+        total: order.total,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+        vendorName: order.vendor.name,
+        vendorAddress: order.vendor.address,
+      }
+
+      res.status(200).json({
+        status: "success",
+        data: {
+          invoice: invoiceData,
+        },
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async downloadInvoice(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params
+      const userId = req.user!.id
+
+      const orderRepository = AppDataSource.getRepository(Order)
+      let order
+
+      // Check if user is customer or vendor
+      if (req.user!.role === "customer") {
+        order = await orderRepository.findOne({
+          where: { id, userId },
+          relations: ["items", "items.product", "vendor", "user"],
+        })
+      } else if (req.user!.role === "vendor") {
+        // Get vendor ID for the current user
+        const vendorRepository = AppDataSource.getRepository(Vendor)
+        const vendor = await vendorRepository.findOne({ where: { userId } })
+
+        if (!vendor) {
+          return next(new AppError("Vendor profile not found", 404))
+        }
+
+        order = await orderRepository.findOne({
+          where: { id, vendorId: vendor.id },
+          relations: ["items", "items.product", "vendor", "user"],
+        })
+      } else {
+        // Admin can view any order
+        order = await orderRepository.findOne({
+          where: { id },
+          relations: ["items", "items.product", "vendor", "user"],
+        })
+      }
+
+      if (!order) {
+        return next(new AppError("Order not found", 404))
+      }
+
+      // Generate PDF invoice
+      const invoiceData = {
+        order,
+        items: order.items,
+        customerName: order.user.name,
+        customerEmail: order.user.email,
+        customerAddress:  order.user.address,
+        vendorName: order.vendor.name,
+        vendorAddress: order.vendor.address,
+      }
+
+      const invoicePath = await generateInvoicePDF(invoiceData)
+
+      // Send the PDF file
+      res.download(invoicePath, `invoice-${order.id}.pdf`)
+    } catch (error) {
+      next(error)
+    }
+  }
 }

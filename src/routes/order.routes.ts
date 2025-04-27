@@ -1,36 +1,29 @@
-import { Router } from 'express';
-import { OrderController } from '../controllers/order.controller';
-import { DashboardController } from '../controllers/dashboard.controller';
-import { authMiddleware } from '../middlewares/authMiddleware';
-const router = Router();
-const orderController = new OrderController();
-const dashboardController = new DashboardController();
+import { Router } from "express"
+import { OrderController } from "../controllers/order.controller"
+import { protect, authorize } from "../middlewares/authMiddleware"
 
+const router = Router()
+const orderController = new OrderController()
 
-router.get('/orders', authMiddleware, orderController.getAllOrders);
-router.get('/orders/:id', authMiddleware, orderController.getOrderById);
-router.patch('/orders/:id/status', authMiddleware, orderController.updateOrderStatus);
-router.get('/orders/statistics', authMiddleware, orderController.getOrderStatistics);
-router.get('/orders/revenue-overview', authMiddleware, orderController.getRevenueOverview);
+// Protected routes
+router.use(protect)
 
-// router.get('/dashboard/overview', authMiddleware, dashboardController.getDashboardOverview);
+// Customer routes
+router.post("/", orderController.createOrder)
+router.get("/my-orders", orderController.getMyOrders)
+router.get("/my-orders/:id", orderController.getMyOrderById)
+router.get("/:id/invoice", orderController.generateInvoice)
 
-export default router;
+// Vendor routes
+router.get("/vendor-orders", authorize("vendor"), orderController.getVendorOrders)
+router.get("/vendor-orders/:id", authorize("vendor"), orderController.getVendorOrderById)
+router.patch("/:id/status", authorize("vendor"), orderController.updateOrderStatus)
 
+// Admin routes
+router.use(authorize("admin"))
+router.get("/", orderController.getAllOrders)
+router.get("/:id", orderController.getOrderById)
+router.put("/:id", orderController.updateOrder)
+router.delete("/:id", orderController.deleteOrder)
 
-
-/////////////////////////
-
-import { Router } from 'express';
-import { OrderController } from '../controller/OrderController';
-import { authenticate } from '../middleware/AuthMiddleware';
-
-const router = Router();
-const orderController = new OrderController();
-
-router.post('/', authenticate, orderController.createOrder);
-router.get('/', authenticate, orderController.getUserOrders);
-router.get('/:id', authenticate, orderController.getOrderDetails);
-router.get('/:id/invoice', authenticate, orderController.downloadInvoice);
-
-export default router;
+export default router

@@ -45,9 +45,9 @@ import {
     })
     status!: PaymentStatus;
   
-    @OneToOne(() => Order, (order) => order.payment)
-    @JoinColumn({ name: 'orderId' })
-    order!: Order;
+    // @OneToOne(() => Order, (order) => order.payment)
+    // @JoinColumn({ name: 'orderId' })
+    // order!: Order;
   
     @Column()
     orderId!: string;

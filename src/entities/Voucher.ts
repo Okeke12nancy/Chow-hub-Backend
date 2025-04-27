@@ -3,38 +3,38 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 @Entity('vouchers')
 export class Voucher {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ unique: true })
-  code: string;
+  code!: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
-  value: number;
+  value!: number;
 
   @Column({ default: false })
-  isPercentage: boolean;
+  isPercentage!: boolean;
 
   @Column({ nullable: true })
-  maxDiscount: number;
+  maxDiscount!: number;
 
   @Column({ nullable: true })
-  minOrderAmount: number;
+  minOrderAmount!: number;
 
   @Column({ default: false })
-  isUsed: boolean;
+  isUsed!: boolean;
 
   @Column({ nullable: true })
-  usedBy: string;
+  usedBy!: string;
 
   @Column({ nullable: true })
-  usedAt: Date;
+  usedAt!: Date;
 
   @Column({ nullable: true })
-  expiresAt: Date;
+  expiresAt!: Date;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

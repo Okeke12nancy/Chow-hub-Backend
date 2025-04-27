@@ -1,154 +1,99 @@
-// import {
-//     Entity,
-//     PrimaryGeneratedColumn,
-//     Column,
-//     CreateDateColumn,
-//     UpdateDateColumn,
-//     ManyToOne,
-//     OneToMany,
-//     OneToOne,
-//     JoinColumn,
-//   } from 'typeorm';
-//   import { User } from './User';
-//   import { OrderItem } from './Order-Item';
-//   import { Payment } from './Payment';
-  
-//   export enum OrderStatus {
-//     PENDING = 'Pending',
-//     PROCESSING = 'Processing',
-//     DELIVERED = 'Delivered',
-//     CANCELLED = 'Cancelled',
-//   }
-  
-//   @Entity('orders')
-//   export class Order {
-//     @PrimaryGeneratedColumn('uuid')
-//     id!: string;
-  
-//     @Column()
-//     orderNumber!: string;
-  
-//     @Column({
-//       type: 'enum',
-//       enum: OrderStatus,
-//       default: OrderStatus.PENDING,
-//     })
-//     status!: OrderStatus;
-  
-//     @Column('decimal', { precision: 10, scale: 2 })
-//     totalAmount!: number;
-  
-//     @Column({ nullable: true })
-//     customerName!: string;
-  
-//     @Column({ nullable: true })
-//     customerEmail!: string;
-  
-//     @ManyToOne(() => User, (user) => user.orders)
-//     @JoinColumn({ name: 'vendorId' })
-//     vendor!: User;
-  
-//     @Column()
-//     vendorId!: string;
-  
-//     @OneToMany(() => OrderItem, (orderItem) => orderItem.order, { cascade: true })
-//     items!: OrderItem[];
-  
-//     @OneToOne(() => Payment, (payment) => payment.order)
-//     payment!: Payment;
-  
-//     @Column({ nullable: true })
-//     notes!: string;
-  
-//     @CreateDateColumn()
-//     createdAt!: Date;
-  
-//     @UpdateDateColumn()
-//     updatedAt!: Date;
-//   }
-
-
-
-
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { User } from './User';
-import { Restaurant } from './Restaurant';
-import { OrderItem } from './OrderItem';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from "typeorm"
+import { User } from "./User"
+import { Vendor } from "./vendor"
+import { OrderItem } from "./Order-Item"
 
 export enum OrderStatus {
-  PENDING = 'pending',
-  CONFIRMED = 'confirmed',
-  READY = 'ready',
-  COMPLETED = 'completed',
-  CANCELLED = 'cancelled'
+  PENDING = "pending",
+  PROCESSING = "processing",
+  DELIVERED = "delivered",
+  CANCELLED = "cancelled",
 }
 
 export enum PaymentMethod {
-  WALLET = 'wallet',
-  VOUCHER = 'voucher'
+  WALLET = "Wallet",
+  Voucher = "Voucher",
 }
 
 export enum PaymentStatus {
-  PENDING = 'pending',
-  PAID = 'paid',
-  FAILED = 'failed'
+  PENDING = "pending",
+  PAID = "paid",
+  FAILED = "failed",
 }
 
-@Entity('orders')
+@Entity("orders")
 export class Order {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ type: 'varchar', unique: true })
-  orderNumber: string;
-
-  @ManyToOne(() => User, user => user.orders)
-  user: User;
-
-  @ManyToOne(() => Restaurant)
-  restaurant: Restaurant;
-
-  @OneToMany(() => OrderItem, orderItem => orderItem.order, { cascade: true })
-  orderItems: OrderItem[];
-
-  @Column('decimal', { precision: 10, scale: 2 })
-  subtotal: number;
-
-  @Column('decimal', { precision: 10, scale: 2, default: 0 })
-  discount: number;
-
-  @Column('decimal', { precision: 10, scale: 2 })
-  total: number;
+  @PrimaryGeneratedColumn("uuid")
+  id!: string
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: OrderStatus,
-    default: OrderStatus.PENDING
+    default: OrderStatus.PENDING,
   })
-  status: OrderStatus;
+  status!: OrderStatus
+
+  @Column({ type: "decimal", precision: 10, scale: 2 })
+  subtotal!: number
+
+  @Column({ type: "decimal", precision: 10, scale: 2 })
+  total!: number
 
   @Column({
-    type: 'enum',
-    enum: PaymentMethod
+    type: "enum",
+    enum: PaymentMethod,
+    default: PaymentMethod.Voucher,
   })
-  paymentMethod: PaymentMethod;
+  paymentMethod!: PaymentMethod
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: PaymentStatus,
-    default: PaymentStatus.PENDING
+    default: PaymentStatus.PENDING,
   })
-  paymentStatus: PaymentStatus;
-
-  @Column({ nullable: true })
-  voucherCode: string;
-
-  @Column({ nullable: true })
-  notes: string;
+  paymentStatus!: PaymentStatus
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date
+
+  @ManyToOne(
+    () => User,
+    (user) => user.orders,
+  )
+  @JoinColumn({ name: "userId" })
+  user!: User
+
+  @Column()
+  userId!: number
+
+  @ManyToOne(
+    () => Vendor,
+    (vendor) => vendor.orders,
+  )
+  @JoinColumn({ name: "vendorId" })
+  vendor!: Vendor
+
+  @Column()
+  vendorId!: number
+
+  @OneToMany(
+    () => OrderItem,
+    (orderItem) => orderItem.order,
+    {
+      cascade: true,
+    },
+  )
+  items!: OrderItem[]
 }

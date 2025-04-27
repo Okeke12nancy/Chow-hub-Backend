@@ -1,44 +1,58 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { User } from '../entities/User';
 import { AppDataSource } from '../data-source';
+import type { Request, Response, NextFunction } from "express"
+import jwt from "jsonwebtoken"
+import { User } from "../entities/User"
+import { AppError } from "../utils/appError"
+import config from '../config/app';
+
+interface JwtPayload {
+  id: number
+  role: string
+}
 
 declare global {
   namespace Express {
     interface Request {
-      user?: User;
+      user?: User
     }
   }
 }
 
-export const authMiddleware = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const protect = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-      res.status(401).json({ message: 'Authentication required' });
-      return ;
+    const authHeader = req.headers.authorization
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return next(new AppError("Not authorized to access this route", 401))
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
-    
-    const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { id: decoded.id } });
+    const token = authHeader.split(" ")[1]
+
+    const decoded = jwt.verify(token, config.jwtSecret) as JwtPayload
+
+    const userRepository = AppDataSource.getRepository(User)
+    const user = await userRepository.findOne({ where: { id: decoded.id } })
 
     if (!user) {
-       res.status(401).json({ message: 'User not found' });
-       return
+      return next(new AppError("User no longer exists", 401))
     }
 
-    req.user = user;
+    req.user = user
     next()
   } catch (error) {
-    console.error('Auth middleware error:', error);
-     res.status(401).json({ message: 'Invalid or expired token' });
-     return
+    return next(new AppError("Not authorized to access this route", 401))
   }
-};
+}
+
+export const authorize = (...roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(new AppError("User not found", 401))
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return next(new AppError("You do not have permission to perform this action", 403))
+    }
+
+    next()
+  }
+}

@@ -1,377 +1,260 @@
-// import { Request, Response } from 'express';
-// import { Product, StockStatus } from '../entities/Product';
-// import { ProductCategory } from '../entities/Product-Category';
-// import upload from '../middlewares/upload';
-// import { AppDataSource } from '../data-source';
-
-// export const getAllProducts = async (req: Request, res: Response) => {
-//   try {
-//     if (!req.user || !req.user.id) {
-//       return res.status(401).json({ message: 'Unauthorized: User not found' });
-//     }
-//     if (!req.user || !req.user.id) {
-//       return res.status(401).json({ message: 'Unauthorized: User not found' });
-//     }
-//     if (!req.user || !req.user.id) {
-//       return res.status(401).json({ message: 'Unauthorized: User not found' });
-//     }
-//     if (!req.user) {
-//       return res.status(401).json({ message: 'Unauthorized: User not found' });
-//     }
-//     if (!req.user) {
-//       return res.status(401).json({ message: 'Unauthorized: User not found' });
-//     }
-//     if (!req.user) {
-//       return res.status(401).json({ message: 'Unauthorized: User not found' });
-//     }
-//     if (!req.user || !req.user.id) {
-//       return res.status(401).json({ message: 'Unauthorized: User not found' });
-//     }
-//     if (!req.user || !req.user.id) {
-//       return res.status(401).json({ message: 'Unauthorized: User not found' });
-//     }
-//     const { id: userId } = req.user;
-//     const productRepository = AppDataSource.getRepository(Product);
-    
-//     const products = await productRepository.find({
-//       where: { userId },
-//       relations: ['category'],
-//       order: { createdAt: 'DESC' }
-//     });
-    
-//     res.status(200).json(products);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       message: 'Failed to fetch products',
-//       error: (error instanceof Error) ? error.message : 'Unknown error'
-//     });
-//   }
-// };
-
-// export const getProductById = async (req: Request, res: Response) => {
-//   try {
-//     const userId = req.user?.id;
-//     const { id } = req.params;
-//     if (!userId) {
-//       return res.status(400).json({ success: false, message: 'User ID is missing' });
-//     }
-    
-    
-//     const productRepository = AppDataSource.getRepository(Product);
-//     const product = await productRepository.findOne({
-//       where: { id, userId },
-//       relations: ['category']
-//     });
-    
-//     if (!product) {
-//       return res.status(404).json({ message: 'Product not found' });
-//     }
-    
-//     res.status(200).json(product);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       message: 'Failed to fetch product',
-//       error: (error instanceof Error) ? error.message : 'Unknown error'
-//     });
-//   }
-// };
-
-
-// export const createProduct = async (req: Request, res: Response) => {
-//   try {
-//     const userId = req.user?.id;
-//     const { id } = req.params;
-//     if (!userId) {
-//       return res.status(400).json({ success: false, message: 'User ID is missing' });
-//     }
-//     const productRepository = AppDataSource.getRepository(Product);
-
-//     const categoryRepository = AppDataSource.getRepository(ProductCategory);
-//     const category = await categoryRepository.findOne(req.body.categoryId);
-
-//     if (!category) {
-//       return res.status(404).json({ message: 'Category not found' });
-//     }
-
-//     const product = productRepository.create({
-//       ...req.body,
-//       userId,
-//       imageUrl: req.file?.path || null,
-//     });
-
-//     await productRepository.save(product);
-
-//     res.status(201).json(product);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       message: 'Failed to create product',
-//       error: (error instanceof Error) ? error.message : 'Unknown error',
-//     });
-//   }
-// };
-
-
-
-// export const updateProduct = async (req: Request, res: Response) => {
-//   try {
-//     const userId = req.user?.id;
-//     const { id } = req.params;
-//     if (!userId) {
-//       return res.status(400).json({ success: false, message: 'User ID is missing' });
-//     }
-    
-//     const productRepository = AppDataSource.getRepository(Product);
-//     const product = await productRepository.findOne({
-//       where: { id, userId }
-//     });
-    
-//     if (!product) {
-//       return res.status(404).json({ message: 'Product not found' });
-//     }
-    
-//     if (req.body.categoryId) {
-//       const categoryRepository = AppDataSource.getRepository(ProductCategory);
-//       const category = await categoryRepository.findOne(req.body.categoryId);
-      
-//       if (!category) {
-//         return res.status(404).json({ message: 'Category not found' });
-//       }
-//     }
-    
-//     productRepository.merge(product, req.body);
-//     const updatedProduct = await productRepository.save(product);
-    
-//     res.status(200).json(updatedProduct);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       message: 'Failed to update product',
-//       error: (error instanceof Error) ? error.message : 'Unknown error'
-//     });
-//   }
-// };
-
-// export const deleteProduct = async (req: Request, res: Response) => {
-//   try {
-//     const userId = req.user?.id;
-//     const { id } = req.params;
-//     if (!userId) {
-//       return res.status(400).json({ success: false, message: 'User ID is missing' });
-//     }
-    
-//     const productRepository = AppDataSource.getRepository(Product);
-//     const product = await productRepository.findOne({
-//       where: { id, userId }
-//     });
-    
-//     if (!product) {
-//       return res.status(404).json({ message: 'Product not found' });
-//     }
-    
-//     await productRepository.remove(product);
-    
-//     res.status(200).json({ message: 'Product deleted successfully' });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       message: 'Failed to delete product',
-//       error: (error instanceof Error) ? error.message : 'Unknown error'
-//     });
-//   }
-// };
-
-// export const getAllCategories = async (req: Request, res: Response) => {
-//   try {
-//     const categoryRepository = AppDataSource.getRepository(ProductCategory);
-//     const categories = await categoryRepository.find({
-//       order: { name: 'ASC' }
-//     });
-    
-//     res.status(200).json(categories);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       message: 'Failed to fetch categories',
-//       error: (error instanceof Error) ? error.message : 'Unknown error'
-//     });
-//   }
-// };
-
-// export const getTopSellingProducts = async (req: Request, res: Response) => {
-//   try {
-//     const userId = req.user?.id;
-//     const { id } = req.params;
-//     if (!userId) {
-//       return res.status(400).json({ success: false, message: 'User ID is missing' });
-//     }
-//     const limit = parseInt(req.query.limit as string) || 5;
-    
-//     const productRepository = AppDataSource.getRepository(Product);
-    
-//     const products = await productRepository
-//       .createQueryBuilder('product')
-//       .where('product.userId = :userId', { userId })
-//       .orderBy('product.totalOrders', 'DESC')
-//       .limit(limit)
-//       .getMany();
-    
-//     res.status(200).json(products);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       message: 'Failed to fetch top selling products',
-//       error: (error instanceof Error) ? error.message : 'Unknown error'
-//     });
-//   }
-// };
-
-import { Request, Response } from 'express';
-import { ProductService } from '../services/product.service';
-import { Product } from '../entities/Product';
+import type { Request, Response, NextFunction } from "express"
+import { Product } from "../entities/Product"
+import { Vendor } from "../entities/vendor"
+import { Category } from "../entities/Category"
+import { AppError } from "../utils/appError"
+import { AppDataSource } from "../data-source"
 
 export class ProductController {
-  private productService: ProductService;
-
-  constructor() {
-    this.productService = new ProductService();
-  }
-
-  private handleError(res: Response, error: any, message: string) {
-    console.error(error);
-    res.status(500).json({
-      message,
-      error: (error instanceof Error) ? error.message : 'Unknown error'
-    });
-  }
-
-  async getAllProducts(req: Request, res: Response): Promise<void> {
+  async getAllProducts(req: Request, res: Response, next: NextFunction) {
     try {
-      if (!req.user || !req.user.id) {
-        res.status(401).json({ message: 'Unauthorized: User not found' });
-        return;
+      const { category, search, minPrice, maxPrice, vendorId } = req.query
+
+      const productRepository = AppDataSource.getRepository(Product)
+      let queryBuilder = productRepository
+        .createQueryBuilder("product")
+        .leftJoinAndSelect("product.category", "category")
+        .leftJoinAndSelect("product.vendor", "vendor")
+        .where("product.isAvailable = :isAvailable", { isAvailable: true })
+
+      if (category) {
+        queryBuilder = queryBuilder.andWhere("category.id = :categoryId", { categoryId: category })
       }
-      
-      const { id: userId } = req.user;
-      const products = await this.productService.getAllProducts(userId);
-      
-      res.status(200).json(products);
+
+      if (search) {
+        queryBuilder = queryBuilder.andWhere("(product.name ILIKE :search OR product.description ILIKE :search)", {
+          search: `%${search}%`,
+        })
+      }
+
+      if (minPrice) {
+        queryBuilder = queryBuilder.andWhere("product.price >= :minPrice", { minPrice })
+      }
+
+      if (maxPrice) {
+        queryBuilder = queryBuilder.andWhere("product.price <= :maxPrice", { maxPrice })
+      }
+
+      if (vendorId) {
+        queryBuilder = queryBuilder.andWhere("vendor.id = :vendorId", { vendorId })
+      }
+
+      const products = await queryBuilder.getMany()
+
+      res.status(200).json({
+        status: "success",
+        results: products.length,
+        data: {
+          products,
+        },
+      })
     } catch (error) {
-      this.handleError(res, error, 'Failed to fetch products');
+      next(error)
     }
   }
 
-  async getProductById(req: Request, res: Response): Promise<void> {
+  async getProductById(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user?.id;
-      const { id } = req.params;
-      
-      if (!userId) {
-        res.status(400).json({ success: false, message: 'User ID is missing' });
-        return;
-      }
-      
-      const product = await this.productService.getProductById(id, userId);
-      
+      const { id } = req.params
+      const productRepository = AppDataSource.getRepository(Product)
+
+      const product = await productRepository.findOne({
+        where: { id: Number(id) },
+        relations: ["category", "vendor"],
+      })
+
       if (!product) {
-        res.status(404).json({ message: 'Product not found' });
-        return;
+        return next(new AppError("Product not found", 404))
       }
-      
-      res.status(200).json(product);
+
+      res.status(200).json({
+        status: "success",
+        data: {
+          product,
+        },
+      })
     } catch (error) {
-      this.handleError(res, error, 'Failed to fetch product');
+      next(error)
     }
   }
 
-  async createProduct(req: Request, res: Response): Promise<void> {
+  async createProduct(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user?.id;
-      
-      if (!userId) {
-        res.status(400).json({ success: false, message: 'User ID is missing' });
-        return;
-      }
-      
-      const imageUrl = req.file?.path;
-      const product = await this.productService.createProduct(req.body, userId, imageUrl);
-      
-      res.status(201).json(product);
-    } catch (error: any) {
-      if (error.message === 'Category not found') {
-        res.status(404).json({ message: error.message });
-      } else {
-        this.handleError(res, error, 'Failed to create product');
-      }
-    }
-  }
+      const { name, description, price, categoryId, image } = req.body
+      const userId = req.user!.id
 
-  async updateProduct(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = req.user?.id;
-      const { id } = req.params;
-      
-      if (!userId) {
-        res.status(400).json({ success: false, message: 'User ID is missing' });
-        return;
-      }
-  
-      const updateData: Partial<Product> = { ...req.body };
-      
-      if (req.file) {
-        updateData.imageUrl = req.file.path; 
-      }
-  
-      if (!updateData || Object.keys(updateData).length === 0) {
-        res.status(400).json({ message: 'No update data provided' });
-        return;
-      }
-      
-      const updatedProduct = await this.productService.updateProduct(id, userId, updateData);
-      res.status(200).json(updatedProduct);
-    } catch (error: any) {
-      // Error handling as in your original code
-    }
-  }
+      // Get vendor ID for the current user
+      const vendorRepository = AppDataSource.getRepository(Vendor)
+      const vendor = await vendorRepository.findOne({ where: { userId } })
 
-  async deleteProduct(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = req.user?.id;
-      const { id } = req.params;
-      
-      if (!userId) {
-        res.status(400).json({ success: false, message: 'User ID is missing' });
-        return;
+      if (!vendor) {
+        return next(new AppError("Vendor profile not found", 404))
       }
-      
-      await this.productService.deleteProduct(id, userId);
-      res.status(200).json({ message: 'Product deleted successfully' });
-    } catch (error: any) {
-      if (error.message === 'Product not found') {
-        res.status(404).json({ message: error.message });
-      } else {
-        this.handleError(res, error, 'Failed to delete product');
-      }
-    }
-  }
 
-  async getTopSellingProducts(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = req.user?.id;
-      
-      if (!userId) {
-        res.status(400).json({ success: false, message: 'User ID is missing' });
-        return;
+      // Check if category exists
+      const categoryRepository = AppDataSource.getRepository(Category)
+      const category = await categoryRepository.findOne(categoryId)
+
+      if (!category) {
+        return next(new AppError("Category not found", 404))
       }
-      
-      const limit = parseInt(req.query.limit as string) || 5;
-      const products = await this.productService.getTopSellingProducts(userId, limit);
-      
-      res.status(200).json(products);
+
+      // Create product
+      const productRepository = AppDataSource.getRepository(Product)
+      const product = productRepository.create({
+        name,
+        description,
+        price,
+        image,
+        vendorId: vendor.id,
+        categoryId,
+      })
+
+      await productRepository.save(product)
+
+      res.status(201).json({
+        status: "success",
+        data: {
+          product,
+        },
+      })
     } catch (error) {
-      this.handleError(res, error, 'Failed to fetch top selling products');
+      next(error)
+    }
+  }
+
+  async updateProduct(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params
+      const { name, description, price, categoryId, image } = req.body
+      const userId = req.user!.id
+
+      // Get vendor ID for the current user
+      const vendorRepository = AppDataSource.getRepository(Vendor)
+      const vendor = await vendorRepository.findOne({ where: { userId } })
+
+      if (!vendor) {
+        return next(new AppError("Vendor profile not found", 404))
+      }
+
+      // Get product
+      const productRepository = AppDataSource.getRepository(Product)
+      const product = await productRepository.findOne({ where: { id: Number(id) } })
+
+      if (!product) {
+        return next(new AppError("Product not found", 404))
+      }
+
+      // Check if product belongs to vendor
+      if (product.vendorId !== vendor.id && req.user!.role !== "admin") {
+        return next(new AppError("You do not have permission to update this product", 403))
+      }
+
+      // Check if category exists if provided
+      if (categoryId) {
+        const categoryRepository = AppDataSource.getRepository(Category)
+        const category = await categoryRepository.findOne(categoryId)
+
+        if (!category) {
+          return next(new AppError("Category not found", 404))
+        }
+      }
+
+      // Update product
+      product.name = name || product.name
+      product.description = description || product.description
+      product.price = price || product.price
+      product.categoryId = categoryId || product.categoryId
+      product.image = image || product.image
+
+      await productRepository.save(product)
+
+      res.status(200).json({
+        status: "success",
+        data: {
+          product,
+        },
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async deleteProduct(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params
+      const userId = req.user!.id
+
+      // Get vendor ID for the current user
+      const vendorRepository = AppDataSource.getRepository(Vendor)
+      const vendor = await vendorRepository.findOne({ where: { userId } })
+
+      if (!vendor) {
+        return next(new AppError("Vendor profile not found", 404))
+      }
+
+      // Get product
+      const productRepository = AppDataSource.getRepository(Product)
+      const product = await productRepository.findOne({ where: { id: Number(id) } })
+
+      if (!product) {
+        return next(new AppError("Product not found", 404))
+      }
+
+      // Check if product belongs to vendor
+      if (product.vendorId !== vendor.id && req.user!.role !== "admin") {
+        return next(new AppError("You do not have permission to delete this product", 403))
+      }
+
+      await productRepository.remove(product)
+
+      res.status(204).json({
+        status: "success",
+        data: null,
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async toggleProductAvailability(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params
+      const { isAvailable } = req.body
+      const userId = req.user!.id
+
+      // Get vendor ID for the current user
+      const vendorRepository = AppDataSource.getRepository(Vendor)
+      const vendor = await vendorRepository.findOne({ where: { userId } })
+
+      if (!vendor) {
+        return next(new AppError("Vendor profile not found", 404))
+      }
+
+      // Get product
+      const productRepository = AppDataSource.getRepository(Product)
+      const product = await productRepository.findOneBy({ id: Number(id) })
+
+      if (!product) {
+        return next(new AppError("Product not found", 404))
+      }
+
+      // Check if product belongs to vendor
+      if (product.vendorId !== vendor.id && req.user!.role !== "admin") {
+        return next(new AppError("You do not have permission to update this product", 403))
+      }
+
+      product.isAvailable = isAvailable
+      await productRepository.save(product)
+
+      res.status(200).json({
+        status: "success",
+        data: {
+          product,
+        },
+      })
+    } catch (error) {
+      next(error)
     }
   }
 }

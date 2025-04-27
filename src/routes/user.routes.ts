@@ -1,34 +1,21 @@
-import { Router } from 'express';
-import { UserController } from '../controllers/user.controller';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import { Router } from "express"
+import { UserController } from "../controllers/user.controller"
+import { protect, authorize } from "../middlewares/authMiddleware"
 
-const router = Router();
-const userController = new UserController();
+const router = Router()
+const userController = new UserController()
 
-router.get('/profile', authMiddleware, (req, res) => userController.getProfile(req, res));
-router.put('/profile', authMiddleware, (req, res) => userController.updateProfile(req, res));
-router.post('/change-password', authMiddleware, (req, res) => userController.changePassword(req, res));
+router.use(protect)
 
-export default router;
+router.get("/profile", userController.getProfile)
+router.put("/profile", userController.updateProfile)
+router.get("/orders", userController.getOrders)
+router.get("/orders/:id", userController.getOrderById)
 
+router.use(authorize("admin"))
+router.get("/", userController.getAllUsers)
+router.get("/:id", userController.getUserById)
+router.put("/:id", userController.updateUser)
+router.delete("/:id", userController.deleteUser)
 
-
-
-//////////////////////////
-// import { Router } from 'express';
-// import { UserController } from '../controller/UserController';
-// import { authenticate } from '../middleware/AuthMiddleware';
-
-// const router = Router();
-// const userController = new UserController();
-
-// // Public routes
-// router.post('/register', userController.register);
-// router.post('/login', userController.login);
-
-// // Protected routes
-// router.get('/profile', authenticate, userController.getProfile);
-// router.put('/profile', authenticate, userController.updateProfile);
-// router.put('/change-password', authenticate, userController.changePassword);
-
-// export default router;
+export default router

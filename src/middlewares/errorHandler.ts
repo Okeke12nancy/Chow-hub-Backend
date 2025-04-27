@@ -1,21 +1,18 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from "express"
+import { AppError } from "../utils/appError"
 
-export const errorHandler = (
-  err: Error,
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  console.error(`Error: ${err.message}`);
-  console.error(err.stack);
+export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({
+      status: "error",
+      message: err.message,
+    })
+  }
 
-  res.status(500).json({
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-  });
-};
+  console.error("Unhandled error:", err)
 
-export const notFound = (req: Request, res: Response, next: NextFunction) => {
-  res.status(404).json({ message: `Not Found - ${req.originalUrl}` });
-};
+  return res.status(500).json({
+    status: "error",
+    message: "Internal server error",
+  })
+}

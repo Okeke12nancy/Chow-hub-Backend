@@ -6,13 +6,7 @@ import { Product } from '../entities/Product';
 import { Order } from '../entities/Order';
 import { OrderItem } from '../entities/Order-Item';
 import { Payment } from '../entities/Payment';
-// import { ProductCategory } from '../entities/Product-Category';
-import { Restaurant } from '../entity/Restaurant';
-import { MenuItem } from '../entity/MenuItem';
-import { Transaction } from '../entities/transaction.entity';
-import { Wallet } from '../entity/Wallet';
-import { WalletTransaction } from '../entity/WalletTransaction';
-import { Voucher } from '../entity/Voucher';
+import { Voucher } from '../entities/Voucher';
 
 dotenv.config();
 
@@ -28,7 +22,7 @@ export const AppDataSource = new DataSource({
   dropSchema: true, 
   logging: process.env.NODE_ENV === 'development',
   // entities: [User, Product, Order, OrderItem, Payment, ProductCategory, Transaction],
-  entities: [User, Product, Order, OrderItem, Payment, Transaction, Voucher, Restaurant, MenuItem, Wallet, WalletTransaction],
+  entities: [User, Product, Order, OrderItem, Payment, Voucher],
   migrations: ["src/migrations/**/*.ts"],
   subscribers: ["src/subscribers/**/*.ts"],
 });

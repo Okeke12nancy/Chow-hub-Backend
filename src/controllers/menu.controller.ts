@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Restaurant } from '../entities/Restaurant';
-import { AppDataSource } from '../data-source';
 import { MenuItem } from '../entities/menu-item';
+import { AppDataSource } from '../data-source';
 
 export class MenuController {
   async getRestaurantMenu(req: Request, res: Response): Promise<Response> {
@@ -9,7 +9,9 @@ export class MenuController {
       const { restaurantId } = req.params;
       
       const restaurantRepository = AppDataSource.getRepository(Restaurant);
-      const restaurant = await restaurantRepository.findOneBy({ id: restaurantId });
+      const restaurant = await restaurantRepository.findOne({
+        where: { id: restaurantId }
+      });
       
       if (!restaurant) {
         return res.status(404).json({ error: 'Restaurant not found' });

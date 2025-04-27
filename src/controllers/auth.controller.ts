@@ -1,174 +1,209 @@
-// import { Request, Response } from "express";
-// import bcrypt from "bcryptjs";
-// import jwt from "jsonwebtoken";
-// import { AppDataSource } from "../data-source";
-// import { User } from "../entities/User";
-// import dotenv from "dotenv"
-
-// dotenv.config()
-
-// const userRepository = AppDataSource.getRepository(User);
-
-// const generateToken = (id: number) => {
-//   return jwt.sign({ id }, process.env.JWT_SECRET || "secret", {
-//     expiresIn: "30d",
-//   });
-// };
-
-// export const register = async (req: Request, res: Response) => {
-//   try {
-//     const { firstName, lastName, email, password, businessName, phoneNumber } = req.body;
-
-//     const userExists = await userRepository.findOne({ where: { email } });
-//     if (userExists) {
-//       return res.status(400).json({
-//         success: false,
-//         error: "User already exists",
-//       });
-//     }
-
-//     const salt = await bcrypt.genSalt(10);
-//     const hashedPassword = await bcrypt.hash(password, salt);
-
-//     const user = userRepository.create({
-//       firstName,
-//       lastName,
-//       email,
-//       password: hashedPassword,
-//       businessName,
-//       phoneNumber,
-//     });
-
-//     await userRepository.save(user);
-
-//     res.status(201).json({
-//       success: true,
-//       data: {
-//         id: user.id,
-//         firstName: user.firstName,
-//         lastName: user.lastName,
-//         email: user.email,
-//         businessName: user.businessName,
-//         token: generateToken(Number(user.id)),
-//       },
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       error: "Server error",
-//     });
-//   }
-// };
-
-// export const login = async (req: Request, res: Response) => {
-//   try {
-//     const { email, password } = req.body;
-
-//     const user = await userRepository.findOne({
-//       where: { email },
-//       select: ["id", "firstName", "lastName", "email", "password", "businessName"],
-//     });
-
-//     if (!user) {
-//       return res.status(401).json({
-//         success: false,
-//         error: "Invalid credentials",
-//       });
-//     }
-
-//     const isMatch = await bcrypt.compare(password, user.password);
-//     if (!isMatch) {
-//       return res.status(401).json({
-//         success: false,
-//         error: "Invalid credentials",
-//       });
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       data: {
-//         id: user.id,
-//         firstName: user.firstName,
-//         lastName: user.lastName,
-//         email: user.email,
-//         businessName: user.businessName,
-//         token: generateToken(Number(user.id)),
-//       },
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       error: "Server error",
-//     });
-//   }
-// };
-
-// export const getCurrentUser = async (req: Request, res: Response) => {
-//   try {
-//     const user = await userRepository.findOne({ 
-//       where: { id: req.user?.id },
-//       select: ["id", "firstName", "lastName", "email", "businessName", "phoneNumber", "profileImage", "bio", "role"]
-//     });
-
-//     res.status(200).json({
-//       success: true,
-//       data: user,
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       error: "Server error",
-//     });
-//   }
-// };
-
-import { Request, Response } from 'express';
-import { AuthService } from '../services/auth.service';
+import type { Request, Response, NextFunction } from "express"
+import { AppDataSource } from "../data-source"
+import jwt from "jsonwebtoken"
+import crypto from "crypto"
+import { User } from "../entities/User"
+import { Vendor } from "../entities/vendor"
+import { AppError } from "../utils/appError"
+import config from "../config/app"
 
 export class AuthController {
-  private authService: AuthService;
-
-  constructor() {
-    this.authService = new AuthService();
+  private generateToken(id: number, role: string): string {
+    return jwt.sign({ id, role }, config.jwtSecret as jwt.Secret, {
+      expiresIn: typeof config.jwtExpiresIn === "string" ? parseInt(config.jwtExpiresIn, 10) : config.jwtExpiresIn,
+    })
   }
 
-  private handleError(res: Response, error: any, message: string) {
-    console.error(error);
-    res.status(500).json({ message, error: error.message });
-  }
-
-  async register(req: Request, res: Response): Promise<void> {
+  async register(req: Request, res: Response, next: NextFunction) {
     try {
-      const userData = {
-        ...req.body,
-        profileImage: req.file ? req.file.path : undefined
-      };
-      
-      console.log("User data being sent to service:", userData);
-      const result = await this.authService.register(userData);
-      res.status(201).json(result);
-    } catch (error: any) {
-      if (error.message === 'Email already in use') {
-        res.status(400).json({ message: error.message });
-      } else {
-        this.handleError(res, error, 'Failed to register user');
+      const { name, email, password, phone, address } = req.body
+
+      const userRepository = AppDataSource.getRepository(User)
+
+      // Check if user already exists
+      const existingUser = await userRepository.findOneBy({ email })
+      if (existingUser) {
+        return next(new AppError("User already exists with this email", 400))
       }
+
+      const user = userRepository.create({
+        name,
+        email,
+        password,
+        phone,
+        address,
+        role: "customer",
+      })
+
+      await userRepository.save(user)
+
+      const token = this.generateToken(user.id, user.role)
+
+      res.status(201).json({
+        status: "success",
+        token,
+        data: {
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          },
+        },
+      })
+    } catch (error) {
+      next(error)
     }
   }
 
-  async login(req: Request, res: Response): Promise<void> {
+  async registerVendor(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, password } = req.body;
-      const result = await this.authService.login(email, password);
-      res.status(200).json(result);
-    } catch (error: any) {
-      if (error.message === 'Invalid email or password') {
-        res.status(401).json({ message: error.message });
-      } else if (error.message === 'Email and password are required') {
-        res.status(400).json({ message: error.message });
-      } else {
-        this.handleError(res, error, 'Failed to login');
+      const { name, email, password, phone, address, vendorName, vendorDescription } = req.body
+
+      const userRepository = AppDataSource.getRepository(User)
+      const vendorRepository = AppDataSource.getRepository(Vendor)
+
+      // Check if user already exists
+      const existingUser = await userRepository.findOneBy({ email })
+      if (existingUser) {
+        return next(new AppError("User already exists with this email", 400))
       }
+
+      // Create new user with vendor role
+      const user = userRepository.create({
+        name,
+        email,
+        password,
+        phone,
+        address,
+        role: "vendor",
+      })
+
+      await userRepository.save(user)
+
+      // Create vendor profile
+      const vendor = vendorRepository.create({
+        name: vendorName,
+        description: vendorDescription,
+        address,
+        phone,
+        userId: user.id,
+      })
+
+      await vendorRepository.save(vendor)
+
+      // Generate token
+      const token = this.generateToken(user.id, user.role)
+
+      res.status(201).json({
+        status: "success",
+        token,
+        data: {
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          },
+          vendor: {
+            id: vendor.id,
+            name: vendor.name,
+          },
+        },
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async login(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body
+
+      if (!email || !password) {
+        return next(new AppError("Please provide email and password", 400))
+      }
+
+      const userRepository = AppDataSource.getRepository(User)
+
+      const user = await userRepository
+        .createQueryBuilder("user")
+        .addSelect("user.password")
+        .where("user.email = :email", { email })
+        .getOne()
+
+      if (!user || !(await user.comparePassword(password))) {
+        return next(new AppError("Incorrect email or password", 401))
+      }
+
+      const token = this.generateToken(user.id, user.role)
+
+      delete (user as any).password
+
+      res.status(200).json({
+        status: "success",
+        token,
+        data: {
+          user,
+        },
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+ 
+  async changePassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { currentPassword, newPassword } = req.body
+      const userId = req.user!.id
+
+      const userRepository = AppDataSource.getRepository(User)
+      const user = await userRepository
+        .createQueryBuilder("user")
+        .addSelect("user.password")
+        .where("user.id = :id", { id: userId })
+        .getOne()
+
+      if (!user || !(await user.comparePassword(currentPassword))) {
+        return next(new AppError("Your current password is incorrect", 401))
+      }
+
+      user.password = newPassword
+      await userRepository.save(user)
+
+      // Generate new token
+      const token = this.generateToken(user.id, user.role)
+
+      res.status(200).json({
+        status: "success",
+        token,
+        message: "Password changed successfully",
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async getMe(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.id
+      const userRepository = AppDataSource.getRepository(User)
+
+      const user = await userRepository.findOneBy({ id: userId })
+
+      if (!user) {
+        return next(new AppError("User not found", 404))
+      }
+
+      res.status(200).json({
+        status: "success",
+        data: {
+          user,
+        },
+      })
+    } catch (error) {
+      next(error)
     }
   }
 }

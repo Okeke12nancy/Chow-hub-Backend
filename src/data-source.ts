@@ -7,7 +7,7 @@ import { Order } from './entities/Order';
 import { OrderItem } from './entities/Order-Item';
 import { Payment } from './entities/Payment';
 // import { ProductCategory } from './entities/Product-Category';
-import { Transaction } from './entities/transaction.entity';
+// import { Transaction } from './entities/transaction.entity';
 
 dotenv.config();
 
@@ -20,7 +20,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_DATABASE || 'chow_hub',
   synchronize: process.env.NODE_ENV === 'development',
   logging: process.env.NODE_ENV === 'development',
-  entities: [User, Product, Order, OrderItem, Payment, Transaction],
+  entities: [User, Product, Order, OrderItem, Payment],
   migrations: ["src/migrations/**/*.ts"],
   subscribers: ["src/subscribers/**/*.ts"],
 });
